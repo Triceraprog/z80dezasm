@@ -44,7 +44,7 @@ class OpCodeTestCase(unittest.TestCase):
         self.assertEqual(expect, split_opcode(0xC9))
 
 
-P_IMMEDIATE = "P_IMM"
+P_IMMEDIATE_16 = "P_IMM_16"
 P_DISPLACEMENT = "P_DISP"
 
 # Format (x, z, y, "NAME")
@@ -55,6 +55,7 @@ P_DISPLACEMENT = "P_DISP"
 
 table = [(0, 0, 0, "NOP", None, None),
          (0, 0, 2, "DJNZ", None, P_DISPLACEMENT),
+         (3, 3, 0, "JP", None, P_IMMEDIATE_16),
          (3, 1, 1, 0, "RET", None, None)]
 
 # Return format
@@ -92,19 +93,18 @@ def decode(memory):
                             return "NOT ENOUGH MEMORY FOR DECODING " + entry[3]
                         else:
                             param_2 = (P_DISPLACEMENT, two_complement_to_signed(memory[1], 8))
+
+                    if entry[5] == P_IMMEDIATE_16:
+                        if len(memory) < 3:
+                            return "NOT ENOUGH MEMORY FOR DECODING " + entry[3]
+                        else:
+                            operand_16bits = memory[1] + (memory[2] << 8)
+                            param_2 = (P_IMMEDIATE_16, operand_16bits)
+
                     return (entry[3], None, None) + (param_2)
             elif len(entry) == 7:
                 if entry[2:3] == splitted_opcode_2[3:4]:
                     return (entry[4], None, None, None, None)
-
-    if splitted_opcode[0] == 3:
-        if splitted_opcode[2] == 3:
-            if splitted_opcode[1] == 0:
-                if len(memory) < 3:
-                    return "NOT ENOUGH MEMORY FOR DECODING JP"
-
-                operand_16bits = memory[1] + (memory[2] << 8)
-                return ("JP", None, None, P_IMMEDIATE, operand_16bits)
 
     return "DECODE ERROR"
 
@@ -152,7 +152,7 @@ class DecodeTestCase(unittest.TestCase):
 
     def test_decode_of_jp_direct(self):
         memory = [0xC3, 0x00, 0x10]
-        expected = ("JP", None, None, P_IMMEDIATE, 0x1000)
+        expected = ("JP", None, None, P_IMMEDIATE_16, 0x1000)
         self.assertEqual(expected, decode(memory))
 
 if __name__ == '__main__':
