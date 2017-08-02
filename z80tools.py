@@ -3,6 +3,25 @@ import unittest
 # with open("vg5000_1.1.rom", "rb") as romFile:
 #    romContent = romFile.read()
 
+def two_complement(number, width):
+    all_1 = 2 ** width - 1
+    number = number ^ all_1
+    number += 1
+    number &= all_1
+    return number
+
+
+def two_complement_to_signed(number, width):
+    all_1 = 2 ** width - 1
+    number &= all_1
+
+    sign_bit = 1 << (width-1)
+
+    if sign_bit & number == 0:
+        return number
+
+    return -two_complement(number, width)
+
 
 def split_opcode(opcode):
     x = (0xC0 & opcode) >> 6
@@ -26,6 +45,7 @@ class OpCodeTestCase(unittest.TestCase):
 
 
 P_IMMEDIATE = "P_IMM"
+P_DISPLACEMENT = "P_DISP"
 
 # Format (x, z, y, "NAME")
 # Format (x, z, q, p, "NAME")
@@ -33,8 +53,9 @@ P_IMMEDIATE = "P_IMM"
 # (0, 0, 0, "NOP")
 # (0, 0, 0, "NOP")
 
-table = [(0, 0, 0, "NOP"),
-         (3, 1, 1, 0, "RET")]
+table = [(0, 0, 0, "NOP", None, None),
+         (0, 0, 2, "DJNZ", None, P_DISPLACEMENT),
+         (3, 1, 1, 0, "RET", None, None)]
 
 # Return format
 # "NOP", None, "", None, ""
@@ -63,10 +84,16 @@ def decode(memory):
 
     for entry in table:
         if entry[0:2] == splitted_opcode_2[0:2]:
-            if len(entry) == 4:
+            if len(entry) == 6:
                 if entry[2] == splitted_opcode_2[2]:
-                    return (entry[3], None, None, None, None)
-            elif len(entry) == 5:
+                    param_2 = (None, None)
+                    if entry[5] == P_DISPLACEMENT:
+                        if len(memory) < 2:
+                            return "NOT ENOUGH MEMORY FOR DECODING " + entry[3]
+                        else:
+                            param_2 = (P_DISPLACEMENT, two_complement(memory[1], 8))
+                    return (entry[3], None, None) + (param_2)
+            elif len(entry) == 7:
                 if entry[2:3] == splitted_opcode_2[3:4]:
                     return (entry[4], None, None, None, None)
 
@@ -82,11 +109,41 @@ def decode(memory):
     return "DECODE ERROR"
 
 
+
+class TwoComplementTestCase(unittest.TestCase):
+    def test_0_complement_is_0(self):
+        self.assertEqual(0, two_complement(0, 8))
+
+    def test_1_complement_is_11111111(self):
+        self.assertEqual(255, two_complement(1, 8))
+
+    def test_10000001_complement_is_01111111(self):
+        self.assertEqual(129, two_complement(127, 8))
+
+    def test_0_is_signed_0(self):
+        self.assertEqual(0, two_complement_to_signed(0, 8))
+
+    def test_1_is_signed_1(self):
+        self.assertEqual(1, two_complement_to_signed(1, 8))
+
+    def test_255_is_signed_minus_1(self):
+        self.assertEqual(-1, two_complement_to_signed(255, 8))
+
+    def test_65535_is_signed_minus_1(self):
+        self.assertEqual(-1, two_complement_to_signed(65535, 16))
+
+
+
 class DecodeTestCase(unittest.TestCase):
     def test_decode_of_nop(self):
         memory = [0]
         expected = ("NOP", None, None, None, None)
         self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_djnz_disp(self):
+        memory = [0x10, 0xe8]
+        expected = ("DJNZ", None, None, P_DISPLACEMENT, -24)
+        # self.assertEqual(expected, decode(memory))
 
     def test_decode_of_ret(self):
         memory = [0xC9]
