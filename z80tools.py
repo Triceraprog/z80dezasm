@@ -27,6 +27,10 @@ class OpCodeTestCase(unittest.TestCase):
 
 P_IMMEDIATE_16 = "P_IMM_16"
 P_DISPLACEMENT = "P_DISP"
+P_REGISTER = "P_REG"
+
+REG_AF = 1
+REG_AF_PRIME = 2
 
 # Format (x, z, y, "NAME")
 # Format (x, z, q, p, "NAME")
@@ -53,7 +57,15 @@ def immediate_16_decode(memory):
     return P_IMMEDIATE_16, operand_16bits
 
 
+def register(register_name):
+    def decode_direct_register(memory):
+        return P_REGISTER, register_name
+
+    return decode_direct_register
+
+
 table = [(0, 0, 0, "NOP", None, None),
+         (0, 0, 1, "EX", register(REG_AF), register(REG_AF_PRIME)),
          (0, 0, 2, "DJNZ", None, displacement_decode),
          (3, 3, 0, "JP", None, immediate_16_decode),
          (3, 1, 1, 0, "RET", None, None)]
@@ -91,13 +103,20 @@ def decode(memory):
                     if entry[2] == splitted_opcode_2[2]:
                         mnemonic = entry[3]
 
+                        decoding_function = entry[4]
+                        if decoding_function is None:
+                            param_1 = (None, None)
+                        else:
+                            param_1 = decoding_function(memory[1:])
+
                         decoding_function = entry[5]
                         if decoding_function is None:
                             param_2 = (None, None)
                         else:
                             param_2 = decoding_function(memory[1:])
 
-                        return (mnemonic, None, None) + (param_2)
+                        return (mnemonic, ) + (param_1) + (param_2)
+
                 elif len(entry) == 7:
                     if entry[2:3] == splitted_opcode_2[3:4]:
                         mnemonic = entry[4]
@@ -117,8 +136,13 @@ class DecodeTestCase(unittest.TestCase):
         self.assertTrue(result[0].startswith("NOT ENOUGH"))
 
     def test_decode_of_nop(self):
-        memory = [0]
+        memory = [0x00]
         expected = ("NOP", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_nop(self):
+        memory = [0x08]
+        expected = ("EX", P_REGISTER, REG_AF, P_REGISTER, REG_AF_PRIME)
         self.assertEqual(expected, decode(memory))
 
     def test_decode_of_djnz_disp(self):
@@ -135,6 +159,7 @@ class DecodeTestCase(unittest.TestCase):
         memory = [0xC3, 0x00, 0x10]
         expected = ("JP", None, None, P_IMMEDIATE_16, 0x1000)
         self.assertEqual(expected, decode(memory))
+
 
 if __name__ == '__main__':
     unittest.main()
