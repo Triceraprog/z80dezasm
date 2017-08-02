@@ -152,15 +152,18 @@ def decode(memory):
 
 
 class DecodeTestCase(unittest.TestCase):
+    def assertSimpleInstructions(self, code, mnemonic):
+        memory = [code]
+        expected = (mnemonic, None, None, None, None)
+        self.assertEqual(expected, decode(memory))
+
     def test_giving_not_enough_memory_to_djnz(self):
         memory = [0x10]
         result = decode(memory)
         self.assertTrue(result[0].startswith("NOT ENOUGH"))
 
     def test_decode_of_nop(self):
-        memory = [0x00]
-        expected = ("NOP", None, None, None, None)
-        self.assertEqual(expected, decode(memory))
+        self.assertSimpleInstructions(0x00, "NOP")
 
     def test_decode_of_nop(self):
         memory = [0x08]
@@ -195,24 +198,17 @@ class DecodeTestCase(unittest.TestCase):
         self.assertEqual(expected, decode(memory))
 
     def test_decode_of_various_x_0(self):
-        def assertSimpleInstructions(code, mnemonic):
-            memory = [code]
-            expected = (mnemonic, None, None, None, None)
-            self.assertEqual(expected, decode(memory))
-
-        assertSimpleInstructions(0x07, "RLCA")
-        assertSimpleInstructions(0x0F, "RRCA")
-        assertSimpleInstructions(0x17, "RLA")
-        assertSimpleInstructions(0x1F, "RRA")
-        assertSimpleInstructions(0x27, "DAA")
-        assertSimpleInstructions(0x2F, "CPL")
-        assertSimpleInstructions(0x37, "SCF")
-        assertSimpleInstructions(0x3F, "CCF")
+        self.assertSimpleInstructions(0x07, "RLCA")
+        self.assertSimpleInstructions(0x0F, "RRCA")
+        self.assertSimpleInstructions(0x17, "RLA")
+        self.assertSimpleInstructions(0x1F, "RRA")
+        self.assertSimpleInstructions(0x27, "DAA")
+        self.assertSimpleInstructions(0x2F, "CPL")
+        self.assertSimpleInstructions(0x37, "SCF")
+        self.assertSimpleInstructions(0x3F, "CCF")
 
     def test_decode_of_ret(self):
-        memory = [0xC9]
-        expected = ("RET", None, None, None, None)
-        self.assertEqual(expected, decode(memory))
+        self.assertSimpleInstructions(0xC9, "RET")
 
     def test_decode_of_jp_direct(self):
         memory = [0xC3, 0x00, 0x10]
