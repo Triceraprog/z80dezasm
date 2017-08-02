@@ -43,14 +43,14 @@ class NotEnoughMemoryOnDecode:
     pass
 
 
-def displacement_decode(memory):
+def displacement_decode(splitted_opcode, memory):
     if len(memory) < 1:
         raise NotEnoughMemoryOnDecode()
 
     return P_DISPLACEMENT, two_complement_to_signed(memory[0], 8)
 
 
-def immediate_16_decode(memory):
+def immediate_16_decode(splitted_opcode, memory):
     if len(memory) < 2:
         raise NotEnoughMemoryOnDecode()
 
@@ -59,13 +59,13 @@ def immediate_16_decode(memory):
 
 
 def register(register_name):
-    def decode_direct_register(memory):
+    def decode_direct_register(splitted_opcode, memory):
         return P_REGISTER, register_name
 
     return decode_direct_register
 
 def condition_register(register_name):
-    def decode_direct_register(memory):
+    def decode_direct_register(splitted_opcode, memory):
         return P_CONDITION, register_name
 
     return decode_direct_register
@@ -104,8 +104,8 @@ def decode(memory):
                 (len(opcode_key) == 4) and (opcode_key[2:3] == opcode_ref_key[3:4]))
 
 
-    def decode_parameter(function, memory):
-        return (None, None) if function is None else function(memory)
+    def decode_parameter(function, splitted_opcode, memory):
+        return (None, None) if function is None else function(splitted_opcode, memory)
 
 
     if len(memory) < 1:
@@ -124,8 +124,8 @@ def decode(memory):
                 if match(opcode_key, splitted_opcode_2):
                     mnemonic = entry[1]
 
-                    param_1 = decode_parameter(entry[2], memory[1:])
-                    param_2 = decode_parameter(entry[3], memory[1:])
+                    param_1 = decode_parameter(entry[2], splitted_opcode, memory[1:])
+                    param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
 
                     return (mnemonic, ) + (param_1) + (param_2)
 
