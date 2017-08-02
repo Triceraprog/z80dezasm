@@ -28,9 +28,15 @@ class OpCodeTestCase(unittest.TestCase):
 P_IMMEDIATE_16 = "P_IMM_16"
 P_DISPLACEMENT = "P_DISP"
 P_REGISTER = "P_REG"
+P_CONDITION = "P_COND"
 
 REG_AF = 1
 REG_AF_PRIME = 2
+
+COND_NZ = 0
+COND_Z = 1
+COND_NC = 2
+COND_C = 3
 
 
 class NotEnoughMemoryOnDecode:
@@ -58,6 +64,13 @@ def register(register_name):
 
     return decode_direct_register
 
+def condition_register(register_name):
+    def decode_direct_register(memory):
+        return P_CONDITION, register_name
+
+    return decode_direct_register
+
+
 # Format on the table is
 # opcode_key, mnemonic, function to decode param 1, function to decode param 2
 # opcode_key can be (x, z, y) or (x, z, q, p)
@@ -65,6 +78,10 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
          ((0, 0, 3), "JR", None, displacement_decode),
+         ((0, 0, 4), "JR", condition_register(COND_NZ), displacement_decode),
+         ((0, 0, 5), "JR", condition_register(COND_Z), displacement_decode),
+         ((0, 0, 6), "JR", condition_register(COND_NC), displacement_decode),
+         ((0, 0, 7), "JR", condition_register(COND_C), displacement_decode),
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
@@ -143,6 +160,23 @@ class DecodeTestCase(unittest.TestCase):
     def test_decode_of_jr_disp(self):
         memory = [0x18, 0xe8]
         expected = ("JR", None, None, P_DISPLACEMENT, -24)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_jr_cond_disp(self):
+        memory = [0x20, 0xe8]
+        expected = ("JR", P_CONDITION, COND_NZ, P_DISPLACEMENT, -24)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x28, 0xe8]
+        expected = ("JR", P_CONDITION, COND_Z, P_DISPLACEMENT, -24)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x30, 0xe8]
+        expected = ("JR", P_CONDITION, COND_NC, P_DISPLACEMENT, -24)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x38, 0xe8]
+        expected = ("JR", P_CONDITION, COND_C, P_DISPLACEMENT, -24)
         self.assertEqual(expected, decode(memory))
 
     def test_decode_of_ret(self):
