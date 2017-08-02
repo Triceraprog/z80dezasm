@@ -3,6 +3,7 @@ import unittest
 # with open("vg5000_1.1.rom", "rb") as romFile:
 #    romContent = romFile.read()
 
+
 def split_opcode(opcode):
     x = (0xC0 & opcode) >> 6
     y = (0x38 & opcode) >> 3
@@ -11,8 +12,8 @@ def split_opcode(opcode):
     p = (0x30 & opcode) >> 4
     q = (0x08 & opcode) >> 3
 
-    # returns x, y, z, p, q
-    return (x, y, z, p, q)
+    return x, y, z, p, q
+
 
 class OpCodeTestCase(unittest.TestCase):
     def test_opcode_nop_splits_to_all_0(self):
@@ -44,7 +45,7 @@ def decode(memory):
     # if invalid, NOP (or NONI)
 
     # LD A,A does nothing, as NOP
-    if (len(memory) < 1):
+    if len(memory) < 1:
         return "ERROR"
 
     opcode = memory[0]
@@ -64,7 +65,7 @@ def decode(memory):
     if splitted_opcode[0] == 3:
         if splitted_opcode[2] == 3:
             if splitted_opcode[1] == 0:
-                if (len(memory) < 3):
+                if len(memory) < 3:
                     return "NOT ENOUGH MEMORY FOR DECODING JP"
 
                 operand_16bits = memory[1] + (memory[2] << 8)
