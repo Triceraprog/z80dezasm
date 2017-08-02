@@ -33,15 +33,15 @@ P_CONDITION = "P_COND"
 REG_AF = 1
 REG_AF_PRIME = 2
 
-COND_NZ = 0
-COND_Z = 1
-COND_NC = 2
-COND_C = 3
+COND_NZ = "COND_NZ"
+COND_Z = "COND_Z"
+COND_NC = "COND_NC"
+COND_C = "COND_C"
 
 COND_REGISTERS_TABLE = [COND_NZ, COND_Z, COND_NC, COND_C]
 
 
-class NotEnoughMemoryOnDecode:
+class NotEnoughMemoryOnDecode(BaseException):
     pass
 
 
@@ -82,10 +82,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
          ((0, 0, 3), "JR", None, displacement_decode),
-         ((0, 0, 4), "JR", condition_register(register_shift=-4), displacement_decode),
-         ((0, 0, 5), "JR", condition_register(register_shift=-4), displacement_decode),
-         ((0, 0, 6), "JR", condition_register(register_shift=-4), displacement_decode),
-         ((0, 0, 7), "JR", condition_register(register_shift=-4), displacement_decode),
+         ((0, 0, range(4, 8)), "JR", condition_register(register_shift=-4), displacement_decode),
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
@@ -102,10 +99,16 @@ def decode(memory):
     # if invalid, NOP (or NONI)
 
     # LD A,A does nothing, as NOP
-    def match(opcode_key, opcode_ref_key):
-        return ((len(opcode_key) == 3) and (opcode_key[2] == opcode_ref_key[2])
+
+    def match_y(opcode_ref_key, opcode_key):
+        if isinstance(opcode_ref_key[2], range):
+            return opcode_key[2] in opcode_ref_key[2]
+        return opcode_key[2] == opcode_ref_key[2]
+
+    def match(opcode_ref_key, opcode_key):
+        return ((len(opcode_ref_key) == 3) and match_y(opcode_ref_key, opcode_key)
                 or
-                (len(opcode_key) == 4) and (opcode_key[2:3] == opcode_ref_key[3:4]))
+                (len(opcode_ref_key) == 4) and (opcode_ref_key[2:3] == opcode_key[3:4]))
 
 
     def decode_parameter(function, splitted_opcode, memory):
