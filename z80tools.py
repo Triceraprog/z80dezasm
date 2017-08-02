@@ -32,11 +32,6 @@ P_REGISTER = "P_REG"
 REG_AF = 1
 REG_AF_PRIME = 2
 
-# Format (x, z, y, "NAME")
-# Format (x, z, q, p, "NAME")
-# NAME = OP nn
-# (0, 0, 0, "NOP")
-# (0, 0, 0, "NOP")
 
 class NotEnoughMemoryOnDecode:
     pass
@@ -63,19 +58,17 @@ def register(register_name):
 
     return decode_direct_register
 
-
+# Format on the table is
+# opcode_key, mnemonic, function to decode param 1, function to decode param 2
+# opcode_key can be (x, z, y) or (x, z, q, p)
 table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
-# Return format
-# "NOP", None, "", None, ""
-# "JP", None, "", P_IMMEDIATE, 0x123
-# "JP", None, "", P_DISPLACEMENT, -14
-# "LD", P_REGISTER, REG_HL, P_REGISTER, REG_SP
-
+# Return format is
+# mnemonic, parameter type 1, parameter value 1, parameter type 2, parameter value 2
 def decode(memory):
     # [prefix,] opcode [,displacement byte] [,immediate data]
     # two prefix bytes (DD/FD + CB), displacement byte, opcode
@@ -87,6 +80,11 @@ def decode(memory):
     # if invalid, NOP (or NONI)
 
     # LD A,A does nothing, as NOP
+    def match(opcode_key, opcode_ref_key):
+        return ((len(opcode_key) == 3) and (opcode_key[2] == opcode_ref_key[2])
+                or
+                (len(opcode_key) == 4) and (opcode_key[2:3] == opcode_ref_key[3:4]))
+
     if len(memory) < 1:
         return "ERROR"
 
@@ -100,7 +98,7 @@ def decode(memory):
         for entry in table:
             opcode_key = entry[0]
             if opcode_key[0:2] == splitted_opcode_2[0:2]:
-                if len(opcode_key) == 3:
+                if match(opcode_key, splitted_opcode_2):
                     if opcode_key[2] == splitted_opcode_2[2]:
                         mnemonic = entry[1]
 
@@ -117,11 +115,6 @@ def decode(memory):
                             param_2 = decoding_function(memory[1:])
 
                         return (mnemonic, ) + (param_1) + (param_2)
-
-                elif len(opcode_key) == 4:
-                    if opcode_key[2:3] == splitted_opcode_2[3:4]:
-                        mnemonic = entry[1]
-                        return (mnemonic, None, None, None, None)
 
     except NotEnoughMemoryOnDecode:
         return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None)
