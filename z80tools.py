@@ -64,6 +64,7 @@ def register(register_name):
 table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
+         ((0, 0, 3), "JR", None, displacement_decode),
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
@@ -137,6 +138,11 @@ class DecodeTestCase(unittest.TestCase):
     def test_decode_of_djnz_disp(self):
         memory = [0x10, 0xe8]
         expected = ("DJNZ", None, None, P_DISPLACEMENT, -24)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_jr_disp(self):
+        memory = [0x18, 0xe8]
+        expected = ("JR", None, None, P_DISPLACEMENT, -24)
         self.assertEqual(expected, decode(memory))
 
     def test_decode_of_ret(self):
