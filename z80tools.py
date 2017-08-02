@@ -83,6 +83,14 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
          ((0, 0, 3), "JR", None, displacement_decode),
          ((0, 0, range(4, 8)), "JR", condition_register(register_shift=-4), displacement_decode),
+         ((0, 7, 0), "RLCA", None, None),
+         ((0, 7, 1), "RRCA", None, None),
+         ((0, 7, 2), "RLA", None, None),
+         ((0, 7, 3), "RRA", None, None),
+         ((0, 7, 4), "DAA", None, None),
+         ((0, 7, 5), "CPL", None, None),
+         ((0, 7, 6), "SCF", None, None),
+         ((0, 7, 7), "CCF", None, None),
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
@@ -185,6 +193,21 @@ class DecodeTestCase(unittest.TestCase):
         memory = [0x38, 0xe8]
         expected = ("JR", P_CONDITION, COND_C, P_DISPLACEMENT, -24)
         self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_various_x_0(self):
+        def assertSimpleInstructions(code, mnemonic):
+            memory = [code]
+            expected = (mnemonic, None, None, None, None)
+            self.assertEqual(expected, decode(memory))
+
+        assertSimpleInstructions(0x07, "RLCA")
+        assertSimpleInstructions(0x0F, "RRCA")
+        assertSimpleInstructions(0x17, "RLA")
+        assertSimpleInstructions(0x1F, "RRA")
+        assertSimpleInstructions(0x27, "DAA")
+        assertSimpleInstructions(0x2F, "CPL")
+        assertSimpleInstructions(0x37, "SCF")
+        assertSimpleInstructions(0x3F, "CCF")
 
     def test_decode_of_ret(self):
         memory = [0xC9]
