@@ -85,6 +85,11 @@ def decode(memory):
                 or
                 (len(opcode_key) == 4) and (opcode_key[2:3] == opcode_ref_key[3:4]))
 
+
+    def decode_parameter(function, memory):
+        return (None, None) if function is None else function(memory)
+
+
     if len(memory) < 1:
         return "ERROR"
 
@@ -102,17 +107,8 @@ def decode(memory):
                     if opcode_key[2] == splitted_opcode_2[2]:
                         mnemonic = entry[1]
 
-                        decoding_function = entry[2]
-                        if decoding_function is None:
-                            param_1 = (None, None)
-                        else:
-                            param_1 = decoding_function(memory[1:])
-
-                        decoding_function = entry[3]
-                        if decoding_function is None:
-                            param_2 = (None, None)
-                        else:
-                            param_2 = decoding_function(memory[1:])
+                        param_1 = decode_parameter(entry[2], memory[1:])
+                        param_2 = decode_parameter(entry[3], memory[1:])
 
                         return (mnemonic, ) + (param_1) + (param_2)
 
