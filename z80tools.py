@@ -24,6 +24,9 @@ class OpCodeTestCase(unittest.TestCase):
         expect = (3, 1, 1, 0, 1)
         self.assertEqual(expect, split_opcode(0xC9))
 
+
+P_IMMEDIATE = "P_IMM"
+
 # Format (x, z, y, "NAME")
 # Format (x, z, q, p, "NAME")
 # NAME = OP nn
@@ -33,6 +36,11 @@ class OpCodeTestCase(unittest.TestCase):
 table = [(0, 0, 0, "NOP"),
          (3, 1, 1, 0, "RET")]
 
+# Return format
+# "NOP", None, "", None, ""
+# "JP", None, "", P_IMMEDIATE, 0x123
+# "JP", None, "", P_DISPLACEMENT, -14
+# "LD", P_REGISTER, REG_HL, P_REGISTER, REG_SP
 
 def decode(memory):
     # [prefix,] opcode [,displacement byte] [,immediate data]
@@ -57,10 +65,10 @@ def decode(memory):
         if entry[0:2] == splitted_opcode_2[0:2]:
             if len(entry) == 4:
                 if entry[2] == splitted_opcode_2[2]:
-                    return entry[3]
+                    return (entry[3], None, None, None, None)
             elif len(entry) == 5:
                 if entry[2:3] == splitted_opcode_2[3:4]:
-                    return entry[4]
+                    return (entry[4], None, None, None, None)
 
     if splitted_opcode[0] == 3:
         if splitted_opcode[2] == 3:
@@ -69,7 +77,7 @@ def decode(memory):
                     return "NOT ENOUGH MEMORY FOR DECODING JP"
 
                 operand_16bits = memory[1] + (memory[2] << 8)
-                return "JP 0x%04x" % operand_16bits
+                return ("JP", None, None, P_IMMEDIATE, operand_16bits)
 
     return "DECODE ERROR"
 
@@ -77,15 +85,18 @@ def decode(memory):
 class DecodeTestCase(unittest.TestCase):
     def test_decode_of_nop(self):
         memory = [0]
-        self.assertEqual("NOP", decode(memory))
+        expected = ("NOP", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
 
     def test_decode_of_ret(self):
         memory = [0xC9]
-        self.assertEqual("RET", decode(memory))
+        expected = ("RET", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
 
     def test_decode_of_jp_direct(self):
         memory = [0xC3, 0x00, 0x10]
-        self.assertEqual("JP 0x1000", decode(memory))
+        expected = ("JP", None, None, P_IMMEDIATE, 0x1000)
+        self.assertEqual(expected, decode(memory))
 
 if __name__ == '__main__':
     unittest.main()
