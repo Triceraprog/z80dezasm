@@ -53,16 +53,20 @@ P_DISPLACEMENT = "P_DISP"
 # (0, 0, 0, "NOP")
 # (0, 0, 0, "NOP")
 
+class NotEnoughMemoryOnDecode:
+    pass
+
+
 def displacement_decode(memory):
     if len(memory) < 1:
-        return "NOT ENOUGH MEMORY FOR DECODING"
+        raise NotEnoughMemoryOnDecode()
 
     return P_DISPLACEMENT, two_complement_to_signed(memory[0], 8)
 
 
 def immediate_16_decode(memory):
     if len(memory) < 2:
-        return "NOT ENOUGH MEMORY FOR DECODING"
+        raise NotEnoughMemoryOnDecode()
 
     operand_16bits = memory[0] + (memory[1] << 8)
     return P_IMMEDIATE_16, operand_16bits
@@ -97,24 +101,31 @@ def decode(memory):
     splitted_opcode = split_opcode(opcode)
     x, y, z, p, q = splitted_opcode
     splitted_opcode_2 = x, z, y, q, p
+    mnemonic = "(not yet found)"
 
-    for entry in table:
-        if entry[0:2] == splitted_opcode_2[0:2]:
-            if len(entry) == 6:
-                if entry[2] == splitted_opcode_2[2]:
+    try:
+        for entry in table:
+            if entry[0:2] == splitted_opcode_2[0:2]:
+                if len(entry) == 6:
+                    if entry[2] == splitted_opcode_2[2]:
+                        mnemonic = entry[3]
 
-                    decoding_function = entry[5]
-                    if decoding_function is None:
-                        param_2 = (None, None)
-                    else:
-                        param_2 = decoding_function(memory[1:])
+                        decoding_function = entry[5]
+                        if decoding_function is None:
+                            param_2 = (None, None)
+                        else:
+                            param_2 = decoding_function(memory[1:])
 
-                    return (entry[3], None, None) + (param_2)
-            elif len(entry) == 7:
-                if entry[2:3] == splitted_opcode_2[3:4]:
-                    return (entry[4], None, None, None, None)
+                        return (mnemonic, None, None) + (param_2)
+                elif len(entry) == 7:
+                    if entry[2:3] == splitted_opcode_2[3:4]:
+                        mnemonic = entry[4]
+                        return (entry[4], None, None, None, None)
 
-    return "DECODE ERROR"
+    except NotEnoughMemoryOnDecode:
+        return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None)
+
+    return ("DECODE ERROR", None, None, None, None)
 
 
 
@@ -143,6 +154,11 @@ class TwoComplementTestCase(unittest.TestCase):
 
 
 class DecodeTestCase(unittest.TestCase):
+    def test_giving_not_enough_memory_to_djnz(self):
+        memory = [0x10]
+        result = decode(memory)
+        self.assertTrue(result[0].startswith("NOT ENOUGH"))
+
     def test_decode_of_nop(self):
         memory = [0]
         expected = ("NOP", None, None, None, None)
