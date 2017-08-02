@@ -91,7 +91,7 @@ def decode(memory):
                         if len(memory) < 2:
                             return "NOT ENOUGH MEMORY FOR DECODING " + entry[3]
                         else:
-                            param_2 = (P_DISPLACEMENT, two_complement(memory[1], 8))
+                            param_2 = (P_DISPLACEMENT, two_complement_to_signed(memory[1], 8))
                     return (entry[3], None, None) + (param_2)
             elif len(entry) == 7:
                 if entry[2:3] == splitted_opcode_2[3:4]:
@@ -143,7 +143,7 @@ class DecodeTestCase(unittest.TestCase):
     def test_decode_of_djnz_disp(self):
         memory = [0x10, 0xe8]
         expected = ("DJNZ", None, None, P_DISPLACEMENT, -24)
-        # self.assertEqual(expected, decode(memory))
+        self.assertEqual(expected, decode(memory))
 
     def test_decode_of_ret(self):
         memory = [0xC9]
