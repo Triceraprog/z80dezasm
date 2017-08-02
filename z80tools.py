@@ -64,11 +64,11 @@ def register(register_name):
     return decode_direct_register
 
 
-table = [(0, 0, 0, "NOP", None, None),
-         (0, 0, 1, "EX", register(REG_AF), register(REG_AF_PRIME)),
-         (0, 0, 2, "DJNZ", None, displacement_decode),
-         (3, 3, 0, "JP", None, immediate_16_decode),
-         (3, 1, 1, 0, "RET", None, None)]
+table = [((0, 0, 0), "NOP", None, None),
+         ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
+         ((0, 0, 2), "DJNZ", None, displacement_decode),
+         ((3, 3, 0), "JP", None, immediate_16_decode),
+         ((3, 1, 1, 0), "RET", None, None)]
 
 # Return format
 # "NOP", None, "", None, ""
@@ -98,18 +98,19 @@ def decode(memory):
 
     try:
         for entry in table:
-            if entry[0:2] == splitted_opcode_2[0:2]:
-                if len(entry) == 6:
-                    if entry[2] == splitted_opcode_2[2]:
-                        mnemonic = entry[3]
+            opcode_key = entry[0]
+            if opcode_key[0:2] == splitted_opcode_2[0:2]:
+                if len(opcode_key) == 3:
+                    if opcode_key[2] == splitted_opcode_2[2]:
+                        mnemonic = entry[1]
 
-                        decoding_function = entry[4]
+                        decoding_function = entry[2]
                         if decoding_function is None:
                             param_1 = (None, None)
                         else:
                             param_1 = decoding_function(memory[1:])
 
-                        decoding_function = entry[5]
+                        decoding_function = entry[3]
                         if decoding_function is None:
                             param_2 = (None, None)
                         else:
@@ -117,10 +118,10 @@ def decode(memory):
 
                         return (mnemonic, ) + (param_1) + (param_2)
 
-                elif len(entry) == 7:
-                    if entry[2:3] == splitted_opcode_2[3:4]:
-                        mnemonic = entry[4]
-                        return (entry[4], None, None, None, None)
+                elif len(opcode_key) == 4:
+                    if opcode_key[2:3] == splitted_opcode_2[3:4]:
+                        mnemonic = entry[1]
+                        return (mnemonic, None, None, None, None)
 
     except NotEnoughMemoryOnDecode:
         return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None)
