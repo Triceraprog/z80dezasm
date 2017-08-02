@@ -104,13 +104,12 @@ def decode(memory):
             opcode_key = entry[0]
             if opcode_key[0:2] == splitted_opcode_2[0:2]:
                 if match(opcode_key, splitted_opcode_2):
-                    if opcode_key[2] == splitted_opcode_2[2]:
-                        mnemonic = entry[1]
+                    mnemonic = entry[1]
 
-                        param_1 = decode_parameter(entry[2], memory[1:])
-                        param_2 = decode_parameter(entry[3], memory[1:])
+                    param_1 = decode_parameter(entry[2], memory[1:])
+                    param_2 = decode_parameter(entry[3], memory[1:])
 
-                        return (mnemonic, ) + (param_1) + (param_2)
+                    return (mnemonic, ) + (param_1) + (param_2)
 
     except NotEnoughMemoryOnDecode:
         return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None)
