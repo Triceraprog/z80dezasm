@@ -164,6 +164,14 @@ table = [((0, 0, 0), "NOP", None, None),
          ((1, 6, 6), "HALT", None, None),
          ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
          ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((2, range(0, 8), 0), "ADD", register(REG_A), register(REG_B)),
+         ((2, range(0, 8), 1), "ADC", register(REG_A), register(REG_B)),
+         ((2, range(0, 8), 2), "SUB", register(REG_A), register(REG_B)),
+         ((2, range(0, 8), 3), "SBC", register(REG_A), register(REG_B)),
+         ((2, range(0, 8), 4), "AND", register(REG_A), register(REG_B)),
+         ((2, range(0, 8), 5), "XOR", register(REG_A), register(REG_B)),
+         ((2, range(0, 8), 6), "OR", register(REG_A), register_from_z),
+         ((2, range(0, 8), 7), "CP", register(REG_A), register_from_z),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -519,6 +527,48 @@ class DecodeTestCase(unittest.TestCase):
         self.assertSimpleInstructions(0x76, "HALT")
 
     # Instructions without prefix, with x=2
+    def test_decode_of_alu_instructions(self):
+        memory = [0x80]
+        expected = ("ADD", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x88]
+        expected = ("ADC", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x90]
+        expected = ("SUB", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x98]
+        expected = ("SBC", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xA0]
+        expected = ("AND", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xA8]
+        expected = ("XOR", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xB0]
+        expected = ("OR", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xB8]
+        expected = ("CP", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xB9]
+        expected = ("CP", P_REGISTER, REG_A, P_REGISTER, REG_C)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xB7]
+        expected = ("OR", P_REGISTER, REG_A, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
+
 
     # Instructions without prefix, with x=3
     def test_decode_of_ret(self):
