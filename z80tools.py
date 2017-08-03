@@ -35,12 +35,12 @@ P_REGISTER = "P_REG"
 P_REGISTER_PAIR = "P_REG_P"
 P_CONDITION = "P_COND"
 
-REG_AF = "R_AF"
-REG_AF_PRIME = "R_AF_P"
-REG_BC = "R_BC"
-REG_DE = "R_DE"
-REG_HL = "R_HL"
-REG_SP = "R_SP"
+REG_AF = "R_AF_P"
+REG_AF_PRIME = "R_AF_PRIME_P"
+REG_BC = "R_BC_P"
+REG_DE = "R_DE_P"
+REG_HL = "R_HL_P"
+REG_SP = "R_SP_P"
 
 COND_NZ = "COND_NZ"
 COND_Z = "COND_Z"
@@ -71,8 +71,9 @@ def immediate_16_decode(splitted_opcode, memory):
 
 
 def register(register_name):
+    param_type = P_REGISTER_PAIR if register_name.endswith("_P") else P_REGISTER
     def decode_direct_register(splitted_opcode, memory):
-        return P_REGISTER, register_name
+        return param_type, register_name
 
     return decode_direct_register
 
@@ -100,6 +101,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 3), "JR", None, displacement_decode),
          ((0, 0, range(4, 8)), "JR", condition_register(register_shift=-4), displacement_decode),
          ((0, 1, 0, range(0, 5)), "LD", register_pair_from_p, immediate_16_decode),
+         ((0, 1, 1, range(0, 5)), "ADD", register(REG_HL), register_pair_from_p),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -188,7 +190,7 @@ class DecodeTestCase(unittest.TestCase):
 
     def test_decode_of_nop(self):
         memory = [0x08]
-        expected = ("EX", P_REGISTER, REG_AF, P_REGISTER, REG_AF_PRIME)
+        expected = ("EX", P_REGISTER_PAIR, REG_AF, P_REGISTER_PAIR, REG_AF_PRIME)
         self.assertEqual(expected, decode(memory))
 
     def test_decode_of_djnz_disp(self):
