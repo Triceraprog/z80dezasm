@@ -114,12 +114,17 @@ def register_pair_indirect(register_name):
 
 def register_pair_from_p(splitted_opcode, memory):
     _, _, _, p, _ = splitted_opcode
-    return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p])
+    return P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p]
 
 
 def register_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
-    return (P_REGISTER, REGISTERS[y])
+    return P_REGISTER, REGISTERS[y]
+
+
+def register_from_z(splitted_opcode, memory):
+    _, _, z, _, _ = splitted_opcode
+    return P_REGISTER, REGISTERS[z]
 
 
 def condition_register(register_shift=0):
@@ -154,6 +159,15 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 4, range(0, 9)), "INC", register_from_y, None),
          ((0, 5, range(0, 9)), "DEC", register_from_y, None),
          ((0, 6, range(0, 9)), "LD", register_from_y, immediate_8_decode),
+         ((1, 0, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 1, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 2, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 3, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 4, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 5, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 6, range(0, 6)), "LD", register_from_y, register_from_z),
+         ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
+         ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -468,6 +482,23 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0x3E, 0xFF]
         expected = ("LD", P_REGISTER, REG_A, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_ld_8_register_to_register(self):
+        memory = [0x40]
+        expected = ("LD", P_REGISTER, REG_B, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x78]
+        expected = ("LD", P_REGISTER, REG_A, P_REGISTER, REG_B)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x43]
+        expected = ("LD", P_REGISTER, REG_B, P_REGISTER, REG_E)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x4B]
+        expected = ("LD", P_REGISTER, REG_C, P_REGISTER, REG_E)
         self.assertEqual(expected, decode(memory))
 
     def test_decode_of_various_x_0(self):
