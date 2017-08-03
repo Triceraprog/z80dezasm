@@ -183,8 +183,8 @@ table = [((0, 0, 0), "NOP", None, None),
 
          ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
 
-         ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
+         ((3, 3, 0), "JP", None, immediate_16_decode),
 
 
 # Return format is
