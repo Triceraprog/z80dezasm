@@ -60,8 +60,12 @@ COND_NZ = "COND_NZ"
 COND_Z = "COND_Z"
 COND_NC = "COND_NC"
 COND_C = "COND_C"
+COND_PO = "COND_PO"
+COND_PE = "COND_PE"
+COND_P = "COND_P"
+COND_M = "COND_M"
 
-COND_REGISTERS_TABLE = [COND_NZ, COND_Z, COND_NC, COND_C]
+COND_REGISTERS_TABLE = [COND_NZ, COND_Z, COND_NC, COND_C, COND_PO, COND_PE, COND_P, COND_M]
 REGISTER_PAIRS_WITH_SP = [REG_BC, REG_DE, REG_HL, REG_SP]
 
 
@@ -183,8 +187,9 @@ table = [((0, 0, 0), "NOP", None, None),
 
          ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
 
-         ((3, 1, 1, 0), "RET", None, None)]
-         ((3, 3, 0), "JP", None, immediate_16_decode),
+         ((3, 0, range(0, 8)), "RET", condition_register(), None),
+         ((3, 1, 1, 0), "RET", None, None),
+         ((3, 3, 0), "JP", None, immediate_16_decode)]
 
 
 # Return format is
@@ -573,9 +578,41 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("OR", P_REGISTER, REG_A, P_REGISTER, REG_A)
         self.assertEqual(expected, decode(memory))
 
-
-
     # Instructions without prefix, with x=3
+    def test_decode_of_conditional_ret(self):
+        memory = [0xC0]
+        expected = ("RET", P_CONDITION, COND_NZ, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xC8]
+        expected = ("RET", P_CONDITION, COND_Z, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD0]
+        expected = ("RET", P_CONDITION, COND_NC, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD8]
+        expected = ("RET", P_CONDITION, COND_C, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE0]
+        expected = ("RET", P_CONDITION, COND_PO, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE8]
+        expected = ("RET", P_CONDITION, COND_PE, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF0]
+        expected = ("RET", P_CONDITION, COND_P, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF8]
+        expected = ("RET", P_CONDITION, COND_M, None, None)
+        self.assertEqual(expected, decode(memory))
+
+
     def test_decode_of_ret(self):
         self.assertSimpleInstructions(0xC9, "RET")
 
