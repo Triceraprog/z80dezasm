@@ -126,6 +126,8 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 2, 1, 1), "LD", register(REG_A), register_pair_indirect(REG_DE)),
          ((0, 2, 1, 2), "LD", register(REG_HL), immediate_16_indirect_decode),
          ((0, 2, 1, 3), "LD", register(REG_A), immediate_16_indirect_decode),
+         ((0, 3, 0, range(0, 5)), "INC", register_pair_from_p, None),
+         ((0, 3, 1, range(0, 5)), "DEC", register_pair_from_p, None),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -309,6 +311,39 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0x3A, 0x00, 0x40]
         expected = ("LD", P_REGISTER, REG_A, P_IMMEDIATE_16_INDIRECT, 16384)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_inc_dec_register_pairs(self):
+        memory = [0x03]
+        expected = ("INC", P_REGISTER_PAIR, REG_BC, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x13]
+        expected = ("INC", P_REGISTER_PAIR, REG_DE, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x23]
+        expected = ("INC", P_REGISTER_PAIR, REG_HL, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x33]
+        expected = ("INC", P_REGISTER_PAIR, REG_SP, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x0B]
+        expected = ("DEC", P_REGISTER_PAIR, REG_BC, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x1B]
+        expected = ("DEC", P_REGISTER_PAIR, REG_DE, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x2B]
+        expected = ("DEC", P_REGISTER_PAIR, REG_HL, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x3B]
+        expected = ("DEC", P_REGISTER_PAIR, REG_SP, None, None)
         self.assertEqual(expected, decode(memory))
 
 
