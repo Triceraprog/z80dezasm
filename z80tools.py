@@ -253,6 +253,7 @@ class DecodeTestCase(unittest.TestCase):
         result = decode(memory)
         self.assertTrue(result[0].startswith("NOT ENOUGH"))
 
+    # Instructions without prefix, with x=0
     def test_decode_of_nop(self):
         self.assertSimpleInstructions(0x00, "NOP")
 
@@ -496,6 +497,7 @@ class DecodeTestCase(unittest.TestCase):
         self.assertSimpleInstructions(0x37, "SCF")
         self.assertSimpleInstructions(0x3F, "CCF")
 
+    # Instructions without prefix, with x=1
     def test_decode_of_ld_8_register_to_register(self):
         memory = [0x40]
         expected = ("LD", P_REGISTER, REG_B, P_REGISTER, REG_B)
@@ -516,6 +518,9 @@ class DecodeTestCase(unittest.TestCase):
     def test_decode_of_halt(self):
         self.assertSimpleInstructions(0x76, "HALT")
 
+    # Instructions without prefix, with x=2
+
+    # Instructions without prefix, with x=3
     def test_decode_of_ret(self):
         self.assertSimpleInstructions(0xC9, "RET")
 
