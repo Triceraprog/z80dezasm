@@ -127,6 +127,13 @@ def register_from_z(splitted_opcode, memory):
     return P_REGISTER, REGISTERS[z]
 
 
+ALU_MNEMONICS = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
+
+def alu_opcode_from_y(splitted_opcode):
+    _, y, _, _, _ = splitted_opcode
+    return ALU_MNEMONICS[y]
+
+
 def condition_register(register_shift=0):
     def decode_direct_register(splitted_opcode, memory):
         _, y, _, _, _ = splitted_opcode
@@ -164,14 +171,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((1, 6, 6), "HALT", None, None),
          ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
          ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((2, range(0, 8), 0), "ADD", register(REG_A), register(REG_B)),
-         ((2, range(0, 8), 1), "ADC", register(REG_A), register(REG_B)),
-         ((2, range(0, 8), 2), "SUB", register(REG_A), register(REG_B)),
-         ((2, range(0, 8), 3), "SBC", register(REG_A), register(REG_B)),
-         ((2, range(0, 8), 4), "AND", register(REG_A), register(REG_B)),
-         ((2, range(0, 8), 5), "XOR", register(REG_A), register(REG_B)),
-         ((2, range(0, 8), 6), "OR", register(REG_A), register_from_z),
-         ((2, range(0, 8), 7), "CP", register(REG_A), register_from_z),
+         ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -238,6 +238,8 @@ def decode(memory):
             if match_xz(opcode_key, splitted_opcode_2):
                 if match(opcode_key, splitted_opcode_2):
                     mnemonic = entry[1]
+                    if not isinstance(mnemonic, str):
+                        mnemonic = mnemonic(splitted_opcode)
 
                     param_1 = decode_parameter(entry[2], splitted_opcode, memory[1:])
                     param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
