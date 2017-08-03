@@ -30,9 +30,11 @@ class OpCodeTestCase(unittest.TestCase):
 
 
 P_IMMEDIATE_16 = "P_IMM_16"
+P_IMMEDIATE_16_INDIRECT = "P_IMM_16_IND"
 P_DISPLACEMENT = "P_DISP"
 P_REGISTER = "P_REG"
 P_REGISTER_PAIR = "P_REG_P"
+P_REGISTER_PAIR_INDIRECT = "P_REG_P_IND"
 P_CONDITION = "P_COND"
 
 REG_AF = "R_AF_P"
@@ -41,6 +43,8 @@ REG_BC = "R_BC_P"
 REG_DE = "R_DE_P"
 REG_HL = "R_HL_P"
 REG_SP = "R_SP_P"
+
+REG_A = "R_A"
 
 COND_NZ = "COND_NZ"
 COND_Z = "COND_Z"
@@ -70,10 +74,22 @@ def immediate_16_decode(splitted_opcode, memory):
     return P_IMMEDIATE_16, operand_16bits
 
 
+def immediate_16_indirect_decode(splitted_opcode, memory):
+    decode = immediate_16_decode(splitted_opcode, memory)
+    return P_IMMEDIATE_16_INDIRECT, decode[1]
+
+
 def register(register_name):
     param_type = P_REGISTER_PAIR if register_name.endswith("_P") else P_REGISTER
     def decode_direct_register(splitted_opcode, memory):
         return param_type, register_name
+
+    return decode_direct_register
+
+
+def register_pair_indirect(register_name):
+    def decode_direct_register(splitted_opcode, memory):
+        return P_REGISTER_PAIR_INDIRECT, register_name
 
     return decode_direct_register
 
@@ -102,6 +118,10 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, range(4, 8)), "JR", condition_register(register_shift=-4), displacement_decode),
          ((0, 1, 0, range(0, 5)), "LD", register_pair_from_p, immediate_16_decode),
          ((0, 1, 1, range(0, 5)), "ADD", register(REG_HL), register_pair_from_p),
+         ((0, 2, 0, 0), "LD", register_pair_indirect(REG_BC), register(REG_A)),
+         ((0, 2, 0, 1), "LD", register_pair_indirect(REG_DE), register(REG_A)),
+         ((0, 2, 0, 2), "LD", immediate_16_indirect_decode, register(REG_HL)),
+         ((0, 2, 0, 3), "LD", immediate_16_indirect_decode, register(REG_A)),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -253,6 +273,24 @@ class DecodeTestCase(unittest.TestCase):
         memory = [0x39]
         expected = ("ADD", P_REGISTER_PAIR, REG_HL, P_REGISTER_PAIR, REG_SP)
         self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_ld_indirect(self):
+        memory = [0x02]
+        expected = ("LD", P_REGISTER_PAIR_INDIRECT, REG_BC, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x12]
+        expected = ("LD", P_REGISTER_PAIR_INDIRECT, REG_DE, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x22, 0x00, 0x40]
+        expected = ("LD", P_IMMEDIATE_16_INDIRECT, 16384, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x32, 0x00, 0x40]
+        expected = ("LD", P_IMMEDIATE_16_INDIRECT, 16384, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
 
     def test_decode_of_various_x_0(self):
         self.assertSimpleInstructions(0x07, "RLCA")
