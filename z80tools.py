@@ -166,12 +166,6 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 4, range(0, 9)), "INC", register_from_y, None),
          ((0, 5, range(0, 9)), "DEC", register_from_y, None),
          ((0, 6, range(0, 9)), "LD", register_from_y, immediate_8_decode),
-         ((1, range(0, 6), range(0, 9)), "LD", register_from_y, register_from_z),
-         ((1, 6, range(0, 6)), "LD", register_from_y, register_from_z),
-         ((1, 6, 6), "HALT", None, None),
-         ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
-         ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -180,6 +174,15 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 7, 5), "CPL", None, None),
          ((0, 7, 6), "SCF", None, None),
          ((0, 7, 7), "CCF", None, None),
+
+         ((1, range(0, 6), range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, 6, range(0, 6)), "LD", register_from_y, register_from_z),
+         ((1, 6, 6), "HALT", None, None),
+         ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
+         ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
+
+         ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
+
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
