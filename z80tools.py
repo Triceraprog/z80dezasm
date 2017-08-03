@@ -1,10 +1,11 @@
 import unittest
 from two_complement import two_complement_to_signed
 
+
 # with open("vg5000_1.1.rom", "rb") as romFile:
 #    romContent = romFile.read()
 
-# xxyyyzz
+# xxyyyzzz
 #   ppq
 
 def split_opcode(opcode):
@@ -40,7 +41,6 @@ REG_BC = "R_BC"
 REG_DE = "R_DE"
 REG_HL = "R_HL"
 REG_SP = "R_SP"
-
 
 COND_NZ = "COND_NZ"
 COND_Z = "COND_Z"
@@ -111,6 +111,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 3, 0), "JP", None, immediate_16_decode),
          ((3, 1, 1, 0), "RET", None, None)]
 
+
 # Return format is
 # mnemonic, parameter type 1, parameter value 1, parameter type 2, parameter value 2
 def decode(memory):
@@ -130,22 +131,19 @@ def decode(memory):
             return opcode_key[2] in opcode_ref_key[2]
         return opcode_key[2] == opcode_ref_key[2]
 
-
     def match_pq(opcode_ref_key, opcode_key):
         if isinstance(opcode_ref_key[3], range):
-            return opcode_key[4] in opcode_ref_key[3]
+            return (opcode_ref_key[2] == opcode_key[3]
+                    and opcode_key[4] in opcode_ref_key[3])
         return opcode_ref_key[2:4] == opcode_key[3:5]
-
 
     def match(opcode_ref_key, opcode_key):
         return ((len(opcode_ref_key) == 3) and match_y(opcode_ref_key, opcode_key)
                 or
                 (len(opcode_ref_key) == 4) and match_pq(opcode_ref_key, opcode_key))
 
-
     def decode_parameter(function, splitted_opcode, memory):
         return (None, None) if function is None else function(splitted_opcode, memory)
-
 
     if len(memory) < 1:
         return "ERROR"
@@ -166,13 +164,12 @@ def decode(memory):
                     param_1 = decode_parameter(entry[2], splitted_opcode, memory[1:])
                     param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
 
-                    return (mnemonic, ) + (param_1) + (param_2)
+                    return (mnemonic,) + (param_1) + (param_2)
 
     except NotEnoughMemoryOnDecode:
         return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None)
 
     return ("DECODE ERROR", None, None, None, None)
-
 
 
 class DecodeTestCase(unittest.TestCase):
@@ -238,6 +235,22 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("LD", P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 4660)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_add_hl_with_register_pair(self):
+        memory = [0x09]
+        expected = ("ADD", P_REGISTER_PAIR, REG_HL, P_REGISTER_PAIR, REG_BC)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x19]
+        expected = ("ADD", P_REGISTER_PAIR, REG_HL, P_REGISTER_PAIR, REG_DE)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x29]
+        expected = ("ADD", P_REGISTER_PAIR, REG_HL, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x39]
+        expected = ("ADD", P_REGISTER_PAIR, REG_HL, P_REGISTER_PAIR, REG_SP)
+        self.assertEqual(expected, decode(memory))
 
     def test_decode_of_various_x_0(self):
         self.assertSimpleInstructions(0x07, "RLCA")
