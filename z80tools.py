@@ -99,10 +99,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
          ((0, 0, 3), "JR", None, displacement_decode),
          ((0, 0, range(4, 8)), "JR", condition_register(register_shift=-4), displacement_decode),
-         ((0, 1, 0, 0), "LD", register_pair_from_p, immediate_16_decode),
-         ((0, 1, 0, 1), "LD", register_pair_from_p, immediate_16_decode),
-         ((0, 1, 0, 2), "LD", register_pair_from_p, immediate_16_decode),
-         ((0, 1, 0, 3), "LD", register_pair_from_p, immediate_16_decode),
+         ((0, 1, 0, range(0, 5)), "LD", register_pair_from_p, immediate_16_decode),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -133,10 +130,17 @@ def decode(memory):
             return opcode_key[2] in opcode_ref_key[2]
         return opcode_key[2] == opcode_ref_key[2]
 
+
+    def match_pq(opcode_ref_key, opcode_key):
+        if isinstance(opcode_ref_key[3], range):
+            return opcode_key[4] in opcode_ref_key[3]
+        return opcode_ref_key[2:4] == opcode_key[3:5]
+
+
     def match(opcode_ref_key, opcode_key):
         return ((len(opcode_ref_key) == 3) and match_y(opcode_ref_key, opcode_key)
                 or
-                (len(opcode_ref_key) == 4) and (opcode_ref_key[2:4] == opcode_key[3:5]))
+                (len(opcode_ref_key) == 4) and match_pq(opcode_ref_key, opcode_key))
 
 
     def decode_parameter(function, splitted_opcode, memory):
