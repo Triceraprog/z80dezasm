@@ -188,6 +188,10 @@ table = [((0, 0, 0), "NOP", None, None),
          ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
 
          ((3, 0, range(0, 8)), "RET", condition_register(), None),
+         ((3, 1, 0, 0), "POP", register(REG_BC), None),
+         ((3, 1, 0, 1), "POP", register(REG_DE), None),
+         ((3, 1, 0, 2), "POP", register(REG_HL), None),
+         ((3, 1, 0, 3), "POP", register(REG_AF), None),
          ((3, 1, 1, 0), "RET", None, None),
          ((3, 3, 0), "JP", None, immediate_16_decode)]
 
@@ -610,6 +614,23 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0xF8]
         expected = ("RET", P_CONDITION, COND_M, None, None)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_pop_register_pair(self):
+        memory = [0xC1]
+        expected = ("POP", P_REGISTER_PAIR, REG_BC, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD1]
+        expected = ("POP", P_REGISTER_PAIR, REG_DE, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE1]
+        expected = ("POP", P_REGISTER_PAIR, REG_HL, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF1]
+        expected = ("POP", P_REGISTER_PAIR, REG_AF, None, None)
         self.assertEqual(expected, decode(memory))
 
 
