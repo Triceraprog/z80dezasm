@@ -29,6 +29,7 @@ class OpCodeTestCase(unittest.TestCase):
         self.assertEqual(expect, split_opcode(0xC9))
 
 
+P_IMMEDIATE_8 = "P_IMM_8"
 P_IMMEDIATE_16 = "P_IMM_16"
 P_IMMEDIATE_16_INDIRECT = "P_IMM_16_IND"
 P_DISPLACEMENT = "P_DISP"
@@ -73,6 +74,14 @@ def displacement_decode(splitted_opcode, memory):
         raise NotEnoughMemoryOnDecode()
 
     return P_DISPLACEMENT, two_complement_to_signed(memory[0], 8)
+
+
+def immediate_8_decode(splitted_opcode, memory):
+    if len(memory) < 1:
+        raise NotEnoughMemoryOnDecode()
+
+    operand_8bits = memory[0]
+    return P_IMMEDIATE_8, operand_8bits
 
 
 def immediate_16_decode(splitted_opcode, memory):
@@ -144,6 +153,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 3, 1, range(0, 5)), "DEC", register_pair_from_p, None),
          ((0, 4, range(0, 9)), "INC", register_from_y, None),
          ((0, 5, range(0, 9)), "DEC", register_from_y, None),
+         ((0, 6, range(0, 9)), "LD", register_from_y, immediate_8_decode),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -427,6 +437,38 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("DEC", P_REGISTER, REG_A, None, None)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_ld_8_immediate(self):
+        memory = [0x06, 0xFF]
+        expected = ("LD", P_REGISTER, REG_B, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x0E, 0xFF]
+        expected = ("LD", P_REGISTER, REG_C, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x16, 0xFF]
+        expected = ("LD", P_REGISTER, REG_D, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x1E, 0xFF]
+        expected = ("LD", P_REGISTER, REG_E, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x26, 0xFF]
+        expected = ("LD", P_REGISTER, REG_H, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x2E, 0xFF]
+        expected = ("LD", P_REGISTER, REG_L, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x36, 0xFF]
+        expected = ("LD", P_REGISTER, REG_AT_HL, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x3E, 0xFF]
+        expected = ("LD", P_REGISTER, REG_A, P_IMMEDIATE_8, 255)
+        self.assertEqual(expected, decode(memory))
 
     def test_decode_of_various_x_0(self):
         self.assertSimpleInstructions(0x07, "RLCA")
