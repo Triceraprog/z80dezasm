@@ -161,6 +161,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 6, range(0, 9)), "LD", register_from_y, immediate_8_decode),
          ((1, range(0, 6), range(0, 9)), "LD", register_from_y, register_from_z),
          ((1, 6, range(0, 6)), "LD", register_from_y, register_from_z),
+         ((1, 6, 6), "HALT", None, None),
          ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
          ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
          ((0, 7, 0), "RLCA", None, None),
@@ -485,6 +486,16 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("LD", P_REGISTER, REG_A, P_IMMEDIATE_8, 255)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_various_x_0(self):
+        self.assertSimpleInstructions(0x07, "RLCA")
+        self.assertSimpleInstructions(0x0F, "RRCA")
+        self.assertSimpleInstructions(0x17, "RLA")
+        self.assertSimpleInstructions(0x1F, "RRA")
+        self.assertSimpleInstructions(0x27, "DAA")
+        self.assertSimpleInstructions(0x2F, "CPL")
+        self.assertSimpleInstructions(0x37, "SCF")
+        self.assertSimpleInstructions(0x3F, "CCF")
+
     def test_decode_of_ld_8_register_to_register(self):
         memory = [0x40]
         expected = ("LD", P_REGISTER, REG_B, P_REGISTER, REG_B)
@@ -502,15 +513,8 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("LD", P_REGISTER, REG_C, P_REGISTER, REG_E)
         self.assertEqual(expected, decode(memory))
 
-    def test_decode_of_various_x_0(self):
-        self.assertSimpleInstructions(0x07, "RLCA")
-        self.assertSimpleInstructions(0x0F, "RRCA")
-        self.assertSimpleInstructions(0x17, "RLA")
-        self.assertSimpleInstructions(0x1F, "RRA")
-        self.assertSimpleInstructions(0x27, "DAA")
-        self.assertSimpleInstructions(0x2F, "CPL")
-        self.assertSimpleInstructions(0x37, "SCF")
-        self.assertSimpleInstructions(0x3F, "CCF")
+    def test_decode_of_halt(self):
+        self.assertSimpleInstructions(0x76, "HALT")
 
     def test_decode_of_ret(self):
         self.assertSimpleInstructions(0xC9, "RET")
