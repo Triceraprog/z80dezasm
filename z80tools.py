@@ -196,6 +196,9 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 0, range(0, 8)), "RET", condition_register(), None),
          ((3, 1, 0, range(0, 4)), "POP", register_pair_alt_from_p, None),
          ((3, 1, 1, 0), "RET", None, None),
+         ((3, 1, 1, 1), "EXX", None, None),
+         ((3, 1, 1, 2), "JP", None, register(REG_HL)),
+         ((3, 1, 1, 3), "LD", register(REG_SP), register(REG_HL)),
          ((3, 3, 0), "JP", None, immediate_16_decode)]
 
 
@@ -637,8 +640,18 @@ class DecodeTestCase(unittest.TestCase):
         self.assertEqual(expected, decode(memory))
 
 
-    def test_decode_of_ret(self):
+    def test_decode_of_various_x_3(self):
         self.assertSimpleInstructions(0xC9, "RET")
+        self.assertSimpleInstructions(0xD9, "EXX")
+
+        memory = [0xE9]
+        expected = ("JP", None, None, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF9]
+        expected = ("LD", P_REGISTER_PAIR, REG_SP, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
 
     def test_decode_of_jp_direct(self):
         memory = [0xC3, 0x00, 0x10]
