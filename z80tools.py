@@ -44,7 +44,16 @@ REG_DE = "R_DE_P"
 REG_HL = "R_HL_P"
 REG_SP = "R_SP_P"
 
+REG_B = "R_B"
+REG_C = "R_C"
+REG_D = "R_D"
+REG_E = "R_E"
+REG_H = "R_H"
+REG_L = "R_L"
+REG_AT_HL = "R_AT_HL"
 REG_A = "R_A"
+
+REGISTERS = [REG_B, REG_C, REG_D, REG_E, REG_H, REG_L, REG_AT_HL, REG_A]
 
 COND_NZ = "COND_NZ"
 COND_Z = "COND_Z"
@@ -99,6 +108,11 @@ def register_pair_from_p(splitted_opcode, memory):
     return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p])
 
 
+def register_from_y(splitted_opcode, memory):
+    _, y, _, _, _ = splitted_opcode
+    return (P_REGISTER, REGISTERS[y])
+
+
 def condition_register(register_shift=0):
     def decode_direct_register(splitted_opcode, memory):
         _, y, _, _, _ = splitted_opcode
@@ -128,6 +142,8 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 2, 1, 3), "LD", register(REG_A), immediate_16_indirect_decode),
          ((0, 3, 0, range(0, 5)), "INC", register_pair_from_p, None),
          ((0, 3, 1, range(0, 5)), "DEC", register_pair_from_p, None),
+         ((0, 4, range(0, 9)), "INC", register_from_y, None),
+         ((0, 5, range(0, 9)), "DEC", register_from_y, None),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -344,6 +360,71 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0x3B]
         expected = ("DEC", P_REGISTER_PAIR, REG_SP, None, None)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_inc_dec_register(self):
+        memory = [0x04]
+        expected = ("INC", P_REGISTER, REG_B, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x0C]
+        expected = ("INC", P_REGISTER, REG_C, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x14]
+        expected = ("INC", P_REGISTER, REG_D, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x1C]
+        expected = ("INC", P_REGISTER, REG_E, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x24]
+        expected = ("INC", P_REGISTER, REG_H, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x2C]
+        expected = ("INC", P_REGISTER, REG_L, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x34]
+        expected = ("INC", P_REGISTER, REG_AT_HL, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x3C]
+        expected = ("INC", P_REGISTER, REG_A, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x05]
+        expected = ("DEC", P_REGISTER, REG_B, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x0D]
+        expected = ("DEC", P_REGISTER, REG_C, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x15]
+        expected = ("DEC", P_REGISTER, REG_D, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x1D]
+        expected = ("DEC", P_REGISTER, REG_E, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x25]
+        expected = ("DEC", P_REGISTER, REG_H, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x2D]
+        expected = ("DEC", P_REGISTER, REG_L, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x35]
+        expected = ("DEC", P_REGISTER, REG_AT_HL, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x3D]
+        expected = ("DEC", P_REGISTER, REG_A, None, None)
         self.assertEqual(expected, decode(memory))
 
 
