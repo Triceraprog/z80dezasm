@@ -4,6 +4,9 @@ from two_complement import two_complement_to_signed
 # with open("vg5000_1.1.rom", "rb") as romFile:
 #    romContent = romFile.read()
 
+# xxyyyzz
+#   ppq
+
 def split_opcode(opcode):
     x = (0xC0 & opcode) >> 6
     y = (0x38 & opcode) >> 3
@@ -28,10 +31,16 @@ class OpCodeTestCase(unittest.TestCase):
 P_IMMEDIATE_16 = "P_IMM_16"
 P_DISPLACEMENT = "P_DISP"
 P_REGISTER = "P_REG"
+P_REGISTER_PAIR = "P_REG_P"
 P_CONDITION = "P_COND"
 
-REG_AF = 1
-REG_AF_PRIME = 2
+REG_AF = "R_AF"
+REG_AF_PRIME = "R_AF_P"
+REG_BC = "R_BC"
+REG_DE = "R_DE"
+REG_HL = "R_HL"
+REG_SP = "R_SP"
+
 
 COND_NZ = "COND_NZ"
 COND_Z = "COND_Z"
@@ -39,6 +48,7 @@ COND_NC = "COND_NC"
 COND_C = "COND_C"
 
 COND_REGISTERS_TABLE = [COND_NZ, COND_Z, COND_NC, COND_C]
+REGISTER_PAIRS_WITH_SP = [REG_BC, REG_DE, REG_HL, REG_SP]
 
 
 class NotEnoughMemoryOnDecode(BaseException):
@@ -66,6 +76,12 @@ def register(register_name):
 
     return decode_direct_register
 
+
+def register_pair_from_p(splitted_opcode, memory):
+    _, _, _, p, _ = splitted_opcode
+    return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p])
+
+
 def condition_register(register_shift=0):
     def decode_direct_register(splitted_opcode, memory):
         _, y, _, _, _ = splitted_opcode
@@ -83,6 +99,10 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
          ((0, 0, 3), "JR", None, displacement_decode),
          ((0, 0, range(4, 8)), "JR", condition_register(register_shift=-4), displacement_decode),
+         ((0, 1, 0, 0), "LD", register_pair_from_p, immediate_16_decode),
+         ((0, 1, 0, 1), "LD", register_pair_from_p, immediate_16_decode),
+         ((0, 1, 0, 2), "LD", register_pair_from_p, immediate_16_decode),
+         ((0, 1, 0, 3), "LD", register_pair_from_p, immediate_16_decode),
          ((0, 7, 0), "RLCA", None, None),
          ((0, 7, 1), "RRCA", None, None),
          ((0, 7, 2), "RLA", None, None),
@@ -116,7 +136,7 @@ def decode(memory):
     def match(opcode_ref_key, opcode_key):
         return ((len(opcode_ref_key) == 3) and match_y(opcode_ref_key, opcode_key)
                 or
-                (len(opcode_ref_key) == 4) and (opcode_ref_key[2:3] == opcode_key[3:4]))
+                (len(opcode_ref_key) == 4) and (opcode_ref_key[2:4] == opcode_key[3:5]))
 
 
     def decode_parameter(function, splitted_opcode, memory):
@@ -196,6 +216,24 @@ class DecodeTestCase(unittest.TestCase):
         memory = [0x38, 0xe8]
         expected = ("JR", P_CONDITION, COND_C, P_DISPLACEMENT, -24)
         self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_ld_16_immediate(self):
+        memory = [0x01, 0x34, 0x12]
+        expected = ("LD", P_REGISTER_PAIR, REG_BC, P_IMMEDIATE_16, 4660)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x11, 0x34, 0x12]
+        expected = ("LD", P_REGISTER_PAIR, REG_DE, P_IMMEDIATE_16, 4660)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x21, 0x34, 0x12]
+        expected = ("LD", P_REGISTER_PAIR, REG_HL, P_IMMEDIATE_16, 4660)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0x31, 0x34, 0x12]
+        expected = ("LD", P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 4660)
+        self.assertEqual(expected, decode(memory))
+
 
     def test_decode_of_various_x_0(self):
         self.assertSimpleInstructions(0x07, "RLCA")
