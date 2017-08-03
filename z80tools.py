@@ -67,6 +67,7 @@ COND_M = "COND_M"
 
 COND_REGISTERS_TABLE = [COND_NZ, COND_Z, COND_NC, COND_C, COND_PO, COND_PE, COND_P, COND_M]
 REGISTER_PAIRS_WITH_SP = [REG_BC, REG_DE, REG_HL, REG_SP]
+REGISTER_PAIRS_WITH_AF = [REG_BC, REG_DE, REG_HL, REG_AF]
 
 
 class NotEnoughMemoryOnDecode(BaseException):
@@ -119,6 +120,11 @@ def register_pair_indirect(register_name):
 def register_pair_from_p(splitted_opcode, memory):
     _, _, _, p, _ = splitted_opcode
     return P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p]
+
+
+def register_pair_alt_from_p(splitted_opcode, memory):
+    _, _, _, p, _ = splitted_opcode
+    return P_REGISTER_PAIR, REGISTER_PAIRS_WITH_AF[p]
 
 
 def register_from_y(splitted_opcode, memory):
@@ -188,10 +194,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((2, range(0, 8), range(0, 8)), alu_opcode_from_y, register(REG_A), register_from_z),
 
          ((3, 0, range(0, 8)), "RET", condition_register(), None),
-         ((3, 1, 0, 0), "POP", register(REG_BC), None),
-         ((3, 1, 0, 1), "POP", register(REG_DE), None),
-         ((3, 1, 0, 2), "POP", register(REG_HL), None),
-         ((3, 1, 0, 3), "POP", register(REG_AF), None),
+         ((3, 1, 0, range(0, 4)), "POP", register_pair_alt_from_p, None),
          ((3, 1, 1, 0), "RET", None, None),
          ((3, 3, 0), "JP", None, immediate_16_decode)]
 
