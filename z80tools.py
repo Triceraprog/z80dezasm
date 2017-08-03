@@ -159,12 +159,7 @@ table = [((0, 0, 0), "NOP", None, None),
          ((0, 4, range(0, 9)), "INC", register_from_y, None),
          ((0, 5, range(0, 9)), "DEC", register_from_y, None),
          ((0, 6, range(0, 9)), "LD", register_from_y, immediate_8_decode),
-         ((1, 0, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((1, 1, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((1, 2, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((1, 3, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((1, 4, range(0, 9)), "LD", register_from_y, register_from_z),
-         ((1, 5, range(0, 9)), "LD", register_from_y, register_from_z),
+         ((1, range(0, 6), range(0, 9)), "LD", register_from_y, register_from_z),
          ((1, 6, range(0, 6)), "LD", register_from_y, register_from_z),
          ((1, 6, range(7, 9)), "LD", register_from_y, register_from_z),
          ((1, 7, range(0, 9)), "LD", register_from_y, register_from_z),
@@ -193,6 +188,12 @@ def decode(memory):
     # if invalid, NOP (or NONI)
 
     # LD A,A does nothing, as NOP
+
+    def match_xz(opcode_ref_key, opcode_key):
+        if isinstance(opcode_ref_key[1], range):
+            return (opcode_ref_key[0] == opcode_key[0]
+                    and opcode_key[1] in opcode_ref_key[1])
+        return opcode_ref_key[0:2] == opcode_key[0:2]
 
     def match_y(opcode_ref_key, opcode_key):
         if isinstance(opcode_ref_key[2], range):
@@ -225,7 +226,7 @@ def decode(memory):
     try:
         for entry in table:
             opcode_key = entry[0]
-            if opcode_key[0:2] == splitted_opcode_2[0:2]:
+            if match_xz(opcode_key, splitted_opcode_2):
                 if match(opcode_key, splitted_opcode_2):
                     mnemonic = entry[1]
 
