@@ -584,6 +584,11 @@ class DecodeEDPrefixTestCase(unittest.TestCase):
         expected = ("RETN", None, None, None, None)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_block_instructions(self):
+        memory = [0xED, 0xA3]
+        expected = ("OUTI", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
+
 
 class DecodeDDPrefixTestCase(unittest.TestCase):
     def test_ignore_dd_if_another_conflicting_prefix(self):

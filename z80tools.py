@@ -151,6 +151,20 @@ def alu_opcode_from_y(splitted_opcode):
     return ALU_MNEMONICS[y]
 
 
+BLOCK_MNEMONICS = [
+        ["LDI", "LDD", "INI", "OUTI"],
+        ["CPI", "CPD", "IND", "OUTD"],
+        ["LDI", "CPIR", "INIR", "OTIR"],
+        ["LDI", "CPDR", "INDR", "OTDR"],
+    ]
+
+def block_opcode_from_yz(splitted_opcode):
+    _, y, z, _, _ = splitted_opcode
+    y -= 4
+    return BLOCK_MNEMONICS[y][z]
+
+
+
 def condition_register(register_shift=0):
     def decode_direct_register(splitted_opcode, memory):
         _, y, _, _, _ = splitted_opcode
@@ -188,6 +202,8 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
             ((1, 1, 7), "OUT", register_pair_indirect(REG_BC), register_from_y),
             ((1, 5, 0), "RETN", None, None),
             ((1, 5, range(2, 8)), "RETN", None, None),
+
+            ((2, range(0, 4), range(4, 8)), block_opcode_from_yz, None, None)
              ]
 table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
