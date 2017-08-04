@@ -210,6 +210,7 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
             ((1, 1, range(0, 6)), "OUT", register_pair_indirect(REG_BC), register_from_y),
             ((1, 1, 6), "OUT", register_pair_indirect(REG_BC), constant_8bits(0)),
             ((1, 1, 7), "OUT", register_pair_indirect(REG_BC), register_from_y),
+            ((1, 3, 0, range(0, 8)), "LD", immediate_16_indirect_decode, register_pair_from_p),
             ((1, 5, 0), "RETN", None, None),
             ((1, 5, range(2, 8)), "RETN", None, None),
 
@@ -347,15 +348,19 @@ def decode_full(memory):
             return ("DDCB PREFIX TODO", None, None, None, None, 4)
         prefix_context_register_fix = register_fix_for_dd_prefix
 
+    prefix_size = 0
+
     if opcode == 0xED:
         current_table = ed_table
         memory = memory[1:]
         opcode = memory[0]
+        prefix_size = 1
 
     if opcode == 0xCB:
         current_table = cb_table
         memory = memory[1:]
         opcode = memory[0]
+        prefix_size = 1
 
     splitted_opcode = split_opcode(opcode)
     x, y, z, p, q = splitted_opcode
@@ -376,7 +381,7 @@ def decode_full(memory):
                     param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
                     param_2, size_2 = param_2
 
-                    decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2, )
+                    decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2 + prefix_size, )
                     decoded_instruction = prefix_context_register_fix(decoded_instruction, memory[1:])
 
                     return decoded_instruction
