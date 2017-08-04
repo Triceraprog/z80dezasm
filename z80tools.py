@@ -145,6 +145,10 @@ def address_from_y(splitted_opcode, memory):
     return (P_IMMEDIATE_16, y * 8), 0
 
 
+def constant_8bits(value):
+    return lambda splitted_opcode, memory: ((P_IMMEDIATE_8, value), 0)
+
+
 ALU_MNEMONICS = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
 
 def alu_opcode_from_y(splitted_opcode):
@@ -184,6 +188,9 @@ def register_fix_for_dd_prefix(decoded, memory):
 ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(REG_BC)),
             ((1, 0, 6), "IN", None, register_pair_indirect(REG_BC)),
             ((1, 0, 7), "IN", register_from_y, register_pair_indirect(REG_BC)),
+            ((1, 1, range(0, 6)), "OUT", register_pair_indirect(REG_BC), register_from_y),
+            ((1, 1, 6), "OUT", register_pair_indirect(REG_BC), constant_8bits(0)),
+            ((1, 1, 7), "OUT", register_pair_indirect(REG_BC), register_from_y),
             ((1, 5, 0), "RETN", None, None),
             ((1, 5, range(2, 8)), "RETN", None, None),
              ]
