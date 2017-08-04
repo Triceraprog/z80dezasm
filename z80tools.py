@@ -199,10 +199,19 @@ def register_fix_for_dd_prefix(decoded, memory):
             result = mnemonic, P_REGISTER_INDEXED, (REG_IX, disp), p2, value, size + 2
 
 
-    if p2 == P_REGISTER and v2 == REG_AT_HL:
+    elif p2 == P_REGISTER and v2 == REG_AT_HL:
         if p1 == P_REGISTER:
             (p, value), p_size = displacement_decode(None, memory[size - 1:])
             result = mnemonic, p1, v1, P_REGISTER_INDEXED, (REG_IX, value), size + p_size + 1
+
+    elif (mnemonic == "EX" and
+          p1 == P_REGISTER_PAIR and v1 == REG_DE and
+          p2 == P_REGISTER_PAIR and v2 == REG_HL):
+        return decoded
+
+    elif p1 == P_REGISTER_PAIR and v1 == REG_HL:
+        if p2 == P_IMMEDIATE_16:
+            result = mnemonic, p1, REG_IX, p2, v2, size + 1
 
     return result or ("DD PREFIX TODO", None, None, None, None, 1)
 
