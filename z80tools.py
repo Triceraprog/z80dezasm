@@ -167,8 +167,16 @@ def register_fix_for_dd_prefix(decoded, memory):
 
     if p1 == P_REGISTER and v1 == REG_AT_HL:
         if p2 == None:
-            (p, value), p_size = immediate_8_decode(None, memory[size - 1:])
+            (p, value), p_size = displacement_decode(None, memory[size - 1:])
             result = mnemonic, P_REGISTER_INDEXED, (REG_IX, value), None, None, size + p_size + 1
+        if p2 == P_REGISTER and v2 == REG_A:
+            (p, value), p_size = displacement_decode(None, memory[size - 1:])
+            result = mnemonic, P_REGISTER_INDEXED, (REG_IX, value), P_REGISTER, REG_A, size + p_size + 1
+
+    if p2 == P_REGISTER and v2 == REG_AT_HL:
+        if p1 == P_REGISTER and v1 == REG_A:
+            (p, value), p_size = displacement_decode(None, memory[size - 1:])
+            result = mnemonic, P_REGISTER, REG_A, P_REGISTER_INDEXED, (REG_IX, value), size + p_size + 1
 
     return result or ("DD PREFIX TODO", None, None, None, None, 1)
 
@@ -902,6 +910,19 @@ class DecodeDDPrefixTestCase(unittest.TestCase):
     def test_dec_with_dd_prefix(self):
         memory = [0xDD, 0x35, 0x00]
         expected = ("DEC", P_REGISTER_INDEXED, (REG_IX, 0), None, None)
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(3, size)
+
+    def test_ld_with_dd_prefix(self):
+        memory = [0xDD, 0x7E, 0x02]
+        expected = ("LD", P_REGISTER, REG_A, P_REGISTER_INDEXED, (REG_IX, 2))
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(3, size)
+
+        memory = [0xDD, 0x77, 0xFF]
+        expected = ("LD", P_REGISTER_INDEXED, (REG_IX, -1), P_REGISTER, REG_A)
         self.assertEqual(expected, decode(memory))
         size = decode_full(memory)[-1]
         self.assertEqual(3, size)
