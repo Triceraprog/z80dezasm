@@ -553,6 +553,11 @@ class DecodeTestCase(unittest.TestCase):
 
 
 class DecodeCBPrefixTestCase(unittest.TestCase):
+    def test_decode_of_rotations(self):
+        memory = [0xCB, 0x1A]
+        expected = ("RR", P_REGISTER, REG_D, None, None)
+        self.assertEqual(expected, decode(memory))
+
     def test_decode_of_bit(self):
         memory = [0xCB, 0x7F]
         expected = ("BIT", P_IMMEDIATE_8, 7, P_REGISTER, REG_A)

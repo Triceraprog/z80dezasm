@@ -169,6 +169,12 @@ def block_opcode_from_yz(splitted_opcode):
     return BLOCK_MNEMONICS[y][z]
 
 
+SHIFT_ROT_MNEMONICS = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", "SLL", "SRL"]
+
+def rot_shift_opcode_from_y(splitted_opcode):
+    _, y, _, _, _ = splitted_opcode
+    return SHIFT_ROT_MNEMONICS[y]
+
 
 def condition_register(register_shift=0):
     def decode_direct_register(splitted_opcode, memory):
@@ -217,7 +223,8 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
             ((2, range(0, 4), range(4, 8)), block_opcode_from_yz, None, None)
              ]
 
-cb_table = [((1, range(0, 8), range(0, 8)), "BIT", constant_from_y, register_from_z),
+cb_table = [((0, range(0, 8), range(0, 8)), rot_shift_opcode_from_y, register_from_z, None),
+            ((1, range(0, 8), range(0, 8)), "BIT", constant_from_y, register_from_z),
             ((2, range(0, 8), range(0, 8)), "RES", constant_from_y, register_from_z),
             ((3, range(0, 8), range(0, 8)), "SET", constant_from_y, register_from_z),
              ]
