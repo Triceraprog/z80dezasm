@@ -618,6 +618,11 @@ class DecodeEDPrefixTestCase(unittest.TestCase):
         expected = ("RETI", None, None, None, None)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_im(self):
+        memory = [0xED, 0x56]
+        expected = ("IM", P_IMMEDIATE_8, 1, None, None)
+        self.assertEqual(expected, decode(memory))
+
     def test_decode_of_block_instructions(self):
         memory = [0xED, 0xA3]
         expected = ("OUTI", None, None, None, None)

@@ -144,6 +144,10 @@ def constant_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
     return (P_IMMEDIATE_8, y), 0
 
+def im_from_y(splitted_opcode, memory):
+    _, y, _, _, _ = splitted_opcode
+    im = [0, 0, 1, 2, 0, 0, 1, 2]
+    return (P_IMMEDIATE_8, im[y]), 0
 
 def constant_8bits(value):
     return lambda splitted_opcode, memory: ((P_IMMEDIATE_8, value), 0)
@@ -229,6 +233,7 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
             ((1, 5, 0), "RETN", None, None),
             ((1, 5, 1), "RETI", None, None),
             ((1, 5, range(2, 8)), "RETN", None, None),
+            ((1, 6, range(0, 8)), "IM", im_from_y, None),
 
             ((2, range(0, 4), range(4, 8)), block_opcode_from_yz, None, None)
              ]
