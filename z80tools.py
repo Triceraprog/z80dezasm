@@ -215,6 +215,8 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 3, 5), "EX", register(REG_DE), register(REG_HL)),
          ((3, 3, 6), "DI", None, None),
          ((3, 3, 7), "EI", None, None),
+
+         ((3, 4, range(0, 8)), "CALL", condition_register(), immediate_16_decode),
          ]
 
 
@@ -727,6 +729,39 @@ class DecodeTestCase(unittest.TestCase):
 
         self.assertSimpleInstructions(0xF3, "DI")
         self.assertSimpleInstructions(0xFB, "EI")
+
+    def test_decode_of_conditional_call(self):
+        memory = [0xC4, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xCC, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_Z, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD4, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_NC, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xDC, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_C, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE4, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_PO, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xEC, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_PE, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF4, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_P, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xFC, 0x00, 0x10]
+        expected = ("CALL", P_CONDITION, COND_M, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
 
 
 if __name__ == '__main__':
