@@ -211,6 +211,10 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 3, 1), "CB PREFIX TODO", None, None),
          ((3, 3, 2), "OUT", immediate_8_indirect_decode, register(REG_A)),
          ((3, 3, 3), "IN", register(REG_A), immediate_8_indirect_decode),
+         ((3, 3, 4), "EX", register_pair_indirect(REG_SP), register(REG_HL)),
+         ((3, 3, 5), "EX", register(REG_DE), register(REG_HL)),
+         ((3, 3, 6), "DI", None, None),
+         ((3, 3, 7), "EI", None, None),
          ]
 
 
@@ -652,7 +656,7 @@ class DecodeTestCase(unittest.TestCase):
         self.assertEqual(expected, decode(memory))
 
 
-    def test_decode_of_various_x_3(self):
+    def test_decode_of_various_x_3_z_1(self):
         self.assertSimpleInstructions(0xC9, "RET")
         self.assertSimpleInstructions(0xD9, "EXX")
 
@@ -712,6 +716,17 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("IN", P_REGISTER, REG_A, P_IMMEDIATE_8_INDIRECT, 129)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_various_x_3_z_3(self):
+        memory = [0xE3]
+        expected = ("EX", P_REGISTER_PAIR_INDIRECT, REG_SP, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xEB]
+        expected = ("EX", P_REGISTER_PAIR, REG_DE, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+        self.assertSimpleInstructions(0xF3, "DI")
+        self.assertSimpleInstructions(0xFB, "EI")
 
 
 if __name__ == '__main__':
