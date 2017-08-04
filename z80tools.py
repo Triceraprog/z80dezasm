@@ -194,7 +194,7 @@ def register_fix_for_dd_prefix(decoded, memory):
 
 
     if p2 == P_REGISTER and v2 == REG_AT_HL:
-        if p1 == P_REGISTER and v1 == REG_A:
+        if p1 == P_REGISTER:
             (p, value), p_size = displacement_decode(None, memory[size - 1:])
             result = mnemonic, p1, v1, P_REGISTER_INDEXED, (REG_IX, value), size + p_size + 1
 
