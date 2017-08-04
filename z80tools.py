@@ -220,6 +220,11 @@ table = [((0, 0, 0), "NOP", None, None),
 
          ((3, 5, 0, range(0, 4)), "PUSH", None, register_pair_alt_from_p),
          ((3, 5, 1, 0), "CALL", None, immediate_16_decode),
+         ((3, 5, 1, 1), "DD PREFIX TODO", None, None),
+         ((3, 5, 1, 2), "ED PREFIX TODO", None, None),
+         ((3, 5, 1, 3), "FD PREFIX TODO", None, None),
+
+         ((3, 6, range(0, 8)), alu_opcode_from_y, register(REG_A), immediate_8_decode),
          ]
 
 
@@ -568,7 +573,7 @@ class DecodeTestCase(unittest.TestCase):
         self.assertSimpleInstructions(0x76, "HALT")
 
     # Instructions without prefix, with x=2
-    def test_decode_of_alu_instructions(self):
+    def test_decode_of_alu_instructions_with_regs(self):
         memory = [0x80]
         expected = ("ADD", P_REGISTER, REG_A, P_REGISTER, REG_B)
         self.assertEqual(expected, decode(memory))
@@ -786,6 +791,39 @@ class DecodeTestCase(unittest.TestCase):
     def test_decode_of_call(self):
         memory = [0xCD, 0x00, 0x10]
         expected = ("CALL", None, None, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_alu_instructions_immediate(self):
+        memory = [0xC6, 0x20]
+        expected = ("ADD", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xCE, 0x20]
+        expected = ("ADC", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD6, 0x20]
+        expected = ("SUB", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xDE, 0x20]
+        expected = ("SBC", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE6, 0x20]
+        expected = ("AND", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xEE, 0x20]
+        expected = ("XOR", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF6, 0x20]
+        expected = ("OR", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xFE, 0x20]
+        expected = ("CP", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
         self.assertEqual(expected, decode(memory))
 
 
