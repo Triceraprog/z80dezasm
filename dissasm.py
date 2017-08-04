@@ -14,7 +14,7 @@ while (pc < size):
 	byte_string = " ".join(byte_list)
 	print("0x%04x %14s %s" % (pc, byte_string, decoded))
 
-	if "TODO" in decoded[0]:
+	if "TODO" in decoded[0] and "DDCB" not in decoded[0]:
 		size = pc + 5
 
 	if decoded_size == 0:
