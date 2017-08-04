@@ -217,6 +217,8 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 3, 7), "EI", None, None),
 
          ((3, 4, range(0, 8)), "CALL", condition_register(), immediate_16_decode),
+
+         ((3, 5, 0, range(0, 4)), "PUSH", None, register_pair_alt_from_p),
          ]
 
 
@@ -761,6 +763,23 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0xFC, 0x00, 0x10]
         expected = ("CALL", P_CONDITION, COND_M, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_conditional_call(self):
+        memory = [0xC5]
+        expected = ("PUSH", None, None, P_REGISTER_PAIR, REG_BC)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD5]
+        expected = ("PUSH", None, None, P_REGISTER_PAIR, REG_DE)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE5]
+        expected = ("PUSH", None, None, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF5]
+        expected = ("PUSH", None, None, P_REGISTER_PAIR, REG_AF)
         self.assertEqual(expected, decode(memory))
 
 
