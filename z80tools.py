@@ -30,6 +30,7 @@ class OpCodeTestCase(unittest.TestCase):
 
 
 P_IMMEDIATE_8 = "P_IMM_8"
+P_IMMEDIATE_8_INDIRECT = "P_IMM_8_IND"
 P_IMMEDIATE_16 = "P_IMM_16"
 P_IMMEDIATE_16_INDIRECT = "P_IMM_16_IND"
 P_DISPLACEMENT = "P_DISP"
@@ -87,6 +88,10 @@ def immediate_8_decode(splitted_opcode, memory):
 
     operand_8bits = memory[0]
     return P_IMMEDIATE_8, operand_8bits
+
+def immediate_8_indirect_decode(splitted_opcode, memory):
+    decode = immediate_8_decode(splitted_opcode, memory)
+    return P_IMMEDIATE_8_INDIRECT, decode[1]
 
 
 def immediate_16_decode(splitted_opcode, memory):
@@ -202,7 +207,11 @@ table = [((0, 0, 0), "NOP", None, None),
 
          ((3, 2, range(0, 8)), "JP", condition_register(), immediate_16_decode),
 
-         ((3, 3, 0), "JP", None, immediate_16_decode)]
+         ((3, 3, 0), "JP", None, immediate_16_decode),
+         ((3, 3, 1), "CB PREFIX TODO", None, None),
+         ((3, 3, 2), "OUT", immediate_8_indirect_decode, register(REG_A)),
+         ((3, 3, 3), "IN", register(REG_A), immediate_8_indirect_decode),
+         ]
 
 
 # Return format is
@@ -688,11 +697,21 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("JP", P_CONDITION, COND_M, P_IMMEDIATE_16, 0x1000)
         self.assertEqual(expected, decode(memory))
 
-
     def test_decode_of_jp_direct(self):
         memory = [0xC3, 0x00, 0x10]
         expected = ("JP", None, None, P_IMMEDIATE_16, 0x1000)
         self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_out(self):
+        memory = [0xD3, 0x80]
+        expected = ("OUT", P_IMMEDIATE_8_INDIRECT, 128, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_in(self):
+        memory = [0xDB, 0x81]
+        expected = ("IN", P_REGISTER, REG_A, P_IMMEDIATE_8_INDIRECT, 129)
+        self.assertEqual(expected, decode(memory))
+
 
 
 if __name__ == '__main__':
