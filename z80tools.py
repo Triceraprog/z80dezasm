@@ -199,6 +199,9 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 1, 1, 1), "EXX", None, None),
          ((3, 1, 1, 2), "JP", None, register(REG_HL)),
          ((3, 1, 1, 3), "LD", register(REG_SP), register(REG_HL)),
+
+         ((3, 2, range(0, 8)), "JP", condition_register(), immediate_16_decode),
+
          ((3, 3, 0), "JP", None, immediate_16_decode)]
 
 
@@ -650,6 +653,39 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0xF9]
         expected = ("LD", P_REGISTER_PAIR, REG_SP, P_REGISTER_PAIR, REG_HL)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_conditional_jp(self):
+        memory = [0xC2, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xCA, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_Z, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xD2, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_NC, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xDA, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_C, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xE2, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_PO, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xEA, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_PE, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xF2, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_P, P_IMMEDIATE_16, 0x1000)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xFA, 0x00, 0x10]
+        expected = ("JP", P_CONDITION, COND_M, P_IMMEDIATE_16, 0x1000)
         self.assertEqual(expected, decode(memory))
 
 
