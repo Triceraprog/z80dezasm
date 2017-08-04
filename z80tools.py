@@ -41,6 +41,7 @@ REG_BC = "R_BC_P"
 REG_DE = "R_DE_P"
 REG_HL = "R_HL_P"
 REG_SP = "R_SP_P"
+REG_IX = "R_IX_P"
 
 REG_B = "R_B"
 REG_C = "R_C"
@@ -159,6 +160,10 @@ def condition_register(register_shift=0):
     return decode_direct_register
 
 
+def register_fix_for_dd_prefix(decoded):
+    return decoded
+
+
 # Format on the table is
 # opcode_key, mnemonic, function to decode param 1, function to decode param 2
 # opcode_key can be (x, z, y) or (x, z, q, p)
@@ -271,9 +276,22 @@ def decode_full(memory):
         return ((None, None), 0) if function is None else function(splitted_opcode, memory)
 
     if len(memory) < 1:
-        return "ERROR"
+        return ("NOT ENOUGH MEMORY TO DECODE ANYTHING", None, None, None, None, 0)
 
     opcode = memory[0]
+    prefix_context_register_fix = lambda x: x
+
+    if opcode == 0xDD:
+        if len(memory) < 2:
+            return ("NOT ENOUGH MEMORY TO DECODE WITH DD PREFIX", None, None, None, None, 0)
+        memory = memory[1:]
+        opcode = memory[0]
+        if opcode in (0xDD, 0xED, 0xFD):
+            return ("NONI", None, None, None, None, 1)
+        if opcode == 0xCB:
+            return ("DDCB PREFIX TODO", None, None, None, None, 4)
+        prefix_context_register_fix = register_fix_for_dd_prefix
+
     splitted_opcode = split_opcode(opcode)
     x, y, z, p, q = splitted_opcode
     splitted_opcode_2 = x, z, y, q, p
@@ -293,7 +311,10 @@ def decode_full(memory):
                     param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
                     param_2, size_2 = param_2
 
-                    return (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2, )
+                    decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2, )
+                    decoded_instrction = prefix_context_register_fix(decoded_instruction)
+
+                    return decoded_instruction
 
     except NotEnoughMemoryOnDecode:
         return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None, 0)
@@ -852,6 +873,21 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0xFF]
         expected = ("RST", None, None, P_IMMEDIATE_16, 0x38)
+        self.assertEqual(expected, decode(memory))
+
+
+class DecodeDDPrefixTestCase(unittest.TestCase):
+    def test_ignore_dd_if_another_conflicting_prefix(self):
+        memory = [0xDD, 0xDD]
+        expected = ("NONI", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xDD, 0xED]
+        expected = ("NONI", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xDD, 0xFD]
+        expected = ("NONI", None, None, None, None)
         self.assertEqual(expected, decode(memory))
 
 

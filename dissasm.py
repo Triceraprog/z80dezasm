@@ -15,7 +15,7 @@ while (pc < size):
 	print("0x%04x %14s %s" % (pc, byte_string, decoded))
 
 	if "TODO" in decoded[0]:
-		exit(0)
+		size = pc + 5
 
 	if decoded_size == 0:
 		exit(0)
