@@ -220,6 +220,10 @@ def register_fix_for_dd_and_fd_prefix(decoded, memory, prefix):
         if p2 == None or p2 == P_IMMEDIATE_16:
             result = mnemonic, p1, substitute, p2, v2, size + 1
 
+    elif p2 == P_REGISTER_PAIR and v2 == REG_HL:
+        if p1 == None:
+            result = mnemonic, p1, v1, p2, substitute, size + 1
+
     return result or ("DD/FD PREFIX TODO", None, None, None, None, 1)
 
 

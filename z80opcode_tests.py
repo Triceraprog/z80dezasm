@@ -705,6 +705,12 @@ class DecodeFDPrefixTestCase(unittest.TestCase):
         size = decode_full(memory)[-1]
         self.assertEqual(2, size)
 
+        memory = [0xFD, 0xE5]
+        expected = ("PUSH", None, None, P_REGISTER_PAIR, REG_IY)
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(2, size)
+
 
 
 if __name__ == '__main__':
