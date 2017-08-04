@@ -1,10 +1,6 @@
 import unittest
 from two_complement import two_complement_to_signed
 
-
-# with open("vg5000_1.1.rom", "rb") as romFile:
-#    romContent = romFile.read()
-
 # xxyyyzzz
 #   ppq
 
@@ -79,7 +75,7 @@ def displacement_decode(splitted_opcode, memory):
     if len(memory) < 1:
         raise NotEnoughMemoryOnDecode()
 
-    return P_DISPLACEMENT, two_complement_to_signed(memory[0], 8)
+    return (P_DISPLACEMENT, two_complement_to_signed(memory[0], 8)), 1
 
 
 def immediate_8_decode(splitted_opcode, memory):
@@ -87,11 +83,11 @@ def immediate_8_decode(splitted_opcode, memory):
         raise NotEnoughMemoryOnDecode()
 
     operand_8bits = memory[0]
-    return P_IMMEDIATE_8, operand_8bits
+    return (P_IMMEDIATE_8, operand_8bits), 1
 
 def immediate_8_indirect_decode(splitted_opcode, memory):
-    decode = immediate_8_decode(splitted_opcode, memory)
-    return P_IMMEDIATE_8_INDIRECT, decode[1]
+    param, size = immediate_8_decode(splitted_opcode, memory)
+    return (P_IMMEDIATE_8_INDIRECT, param[1]), size
 
 
 def immediate_16_decode(splitted_opcode, memory):
@@ -99,52 +95,52 @@ def immediate_16_decode(splitted_opcode, memory):
         raise NotEnoughMemoryOnDecode()
 
     operand_16bits = memory[0] + (memory[1] << 8)
-    return P_IMMEDIATE_16, operand_16bits
+    return (P_IMMEDIATE_16, operand_16bits), 2
 
 
 def immediate_16_indirect_decode(splitted_opcode, memory):
-    decode = immediate_16_decode(splitted_opcode, memory)
-    return P_IMMEDIATE_16_INDIRECT, decode[1]
+    param, size = immediate_16_decode(splitted_opcode, memory)
+    return (P_IMMEDIATE_16_INDIRECT, param[1]), size
 
 
 def register(register_name):
     param_type = P_REGISTER_PAIR if register_name.endswith("_P") else P_REGISTER
     def decode_direct_register(splitted_opcode, memory):
-        return param_type, register_name
+        return (param_type, register_name), 0
 
     return decode_direct_register
 
 
 def register_pair_indirect(register_name):
     def decode_direct_register(splitted_opcode, memory):
-        return P_REGISTER_PAIR_INDIRECT, register_name
+        return (P_REGISTER_PAIR_INDIRECT, register_name), 0
 
     return decode_direct_register
 
 
 def register_pair_from_p(splitted_opcode, memory):
     _, _, _, p, _ = splitted_opcode
-    return P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p]
+    return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p]), 0
 
 
 def register_pair_alt_from_p(splitted_opcode, memory):
     _, _, _, p, _ = splitted_opcode
-    return P_REGISTER_PAIR, REGISTER_PAIRS_WITH_AF[p]
+    return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_AF[p]), 0
 
 
 def register_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
-    return P_REGISTER, REGISTERS[y]
+    return (P_REGISTER, REGISTERS[y]), 0
 
 
 def register_from_z(splitted_opcode, memory):
     _, _, z, _, _ = splitted_opcode
-    return P_REGISTER, REGISTERS[z]
+    return (P_REGISTER, REGISTERS[z]), 0
 
 
 def address_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
-    return P_IMMEDIATE_16, y * 8
+    return (P_IMMEDIATE_16, y * 8), 0
 
 
 ALU_MNEMONICS = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
@@ -158,7 +154,7 @@ def condition_register(register_shift=0):
     def decode_direct_register(splitted_opcode, memory):
         _, y, _, _, _ = splitted_opcode
         shifted_register = y + register_shift
-        return P_CONDITION, COND_REGISTERS_TABLE[shifted_register]
+        return (P_CONDITION, COND_REGISTERS_TABLE[shifted_register]), 0
 
     return decode_direct_register
 
@@ -236,8 +232,8 @@ table = [((0, 0, 0), "NOP", None, None),
 
 
 # Return format is
-# mnemonic, parameter type 1, parameter value 1, parameter type 2, parameter value 2
-def decode(memory):
+# mnemonic, parameter type 1, parameter value 1, parameter type 2, parameter value 2, consumed bytes
+def decode_full(memory):
     # [prefix,] opcode [,displacement byte] [,immediate data]
     # two prefix bytes (DD/FD + CB), displacement byte, opcode
 
@@ -272,7 +268,7 @@ def decode(memory):
                 (len(opcode_ref_key) == 4) and match_pq(opcode_ref_key, opcode_key))
 
     def decode_parameter(function, splitted_opcode, memory):
-        return (None, None) if function is None else function(splitted_opcode, memory)
+        return ((None, None), 0) if function is None else function(splitted_opcode, memory)
 
     if len(memory) < 1:
         return "ERROR"
@@ -293,14 +289,20 @@ def decode(memory):
                         mnemonic = mnemonic(splitted_opcode)
 
                     param_1 = decode_parameter(entry[2], splitted_opcode, memory[1:])
+                    param_1, size_1 = param_1
                     param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
+                    param_2, size_2 = param_2
 
-                    return (mnemonic,) + (param_1) + (param_2)
+                    return (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2, )
 
     except NotEnoughMemoryOnDecode:
-        return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None)
+        return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None, 0)
 
-    return ("DECODE ERROR", None, None, None, None)
+    return ("DECODE ERROR", None, None, None, None, 0)
+
+
+def decode(memory):
+    return decode_full(memory)[:-1]
 
 
 class DecodeTestCase(unittest.TestCase):
@@ -308,6 +310,8 @@ class DecodeTestCase(unittest.TestCase):
         memory = [code]
         expected = (mnemonic, None, None, None, None)
         self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(1, size)
 
     def test_giving_not_enough_memory_to_djnz(self):
         memory = [0x10]
@@ -337,6 +341,8 @@ class DecodeTestCase(unittest.TestCase):
         memory = [0x20, 0xe8]
         expected = ("JR", P_CONDITION, COND_NZ, P_DISPLACEMENT, -24)
         self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(2, size)
 
         memory = [0x28, 0xe8]
         expected = ("JR", P_CONDITION, COND_Z, P_DISPLACEMENT, -24)
@@ -354,6 +360,8 @@ class DecodeTestCase(unittest.TestCase):
         memory = [0x01, 0x34, 0x12]
         expected = ("LD", P_REGISTER_PAIR, REG_BC, P_IMMEDIATE_16, 4660)
         self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(3, size)
 
         memory = [0x11, 0x34, 0x12]
         expected = ("LD", P_REGISTER_PAIR, REG_DE, P_IMMEDIATE_16, 4660)
