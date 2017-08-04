@@ -553,6 +553,19 @@ class DecodeTestCase(unittest.TestCase):
 
 
 class DecodeEDPrefixTestCase(unittest.TestCase):
+    def test_decode_of_in_16_bits(self):
+        memory = [0xED, 0x40]
+        expected = ("IN", P_REGISTER, REG_B, P_REGISTER_PAIR_INDIRECT, REG_BC)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xED, 0x78]
+        expected = ("IN", P_REGISTER, REG_A, P_REGISTER_PAIR_INDIRECT, REG_BC)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xED, 0x70]
+        expected = ("IN", None, None, P_REGISTER_PAIR_INDIRECT, REG_BC)
+        self.assertEqual(expected, decode(memory))
+
     def test_decode_of_retn(self):
         memory = [0xED, 0x45]
         expected = ("RETN", None, None, None, None)

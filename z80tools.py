@@ -181,7 +181,10 @@ def register_fix_for_dd_prefix(decoded, memory):
 # Format on the table is
 # opcode_key, mnemonic, function to decode param 1, function to decode param 2
 # opcode_key can be (x, z, y) or (x, z, q, p)
-ed_table = [((1, 5, 0), "RETN", None, None),
+ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(REG_BC)),
+            ((1, 0, 6), "IN", None, register_pair_indirect(REG_BC)),
+            ((1, 0, 7), "IN", register_from_y, register_pair_indirect(REG_BC)),
+            ((1, 5, 0), "RETN", None, None),
             ((1, 5, range(2, 8)), "RETN", None, None),
              ]
 table = [((0, 0, 0), "NOP", None, None),
