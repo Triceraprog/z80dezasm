@@ -146,6 +146,7 @@ def constant_from_y(splitted_opcode, memory):
 
 def im_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
+    # Second 0 case is to be checked
     im = [0, 0, 1, 2, 0, 0, 1, 2]
     return (P_IMMEDIATE_8, im[y]), 0
 
