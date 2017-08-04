@@ -31,6 +31,7 @@ P_IMMEDIATE_16 = "P_IMM_16"
 P_IMMEDIATE_16_INDIRECT = "P_IMM_16_IND"
 P_DISPLACEMENT = "P_DISP"
 P_REGISTER = "P_REG"
+P_REGISTER_INDEXED = "P_REG_IDX"
 P_REGISTER_PAIR = "P_REG_P"
 P_REGISTER_PAIR_INDIRECT = "P_REG_P_IND"
 P_CONDITION = "P_COND"
@@ -160,8 +161,16 @@ def condition_register(register_shift=0):
     return decode_direct_register
 
 
-def register_fix_for_dd_prefix(decoded):
-    return decoded
+def register_fix_for_dd_prefix(decoded, memory):
+    mnemonic, p1, v1, p2, v2, size = decoded
+    result = None
+
+    if p1 == P_REGISTER and v1 == REG_AT_HL:
+        if p2 == None:
+            (p, value), p_size = immediate_8_decode(None, memory[size - 1:])
+            result = mnemonic, P_REGISTER_INDEXED, (REG_IX, value), None, None, size + p_size + 1
+
+    return result or ("DD PREFIX TODO", None, None, None, None, 1)
 
 
 # Format on the table is
@@ -279,7 +288,7 @@ def decode_full(memory):
         return ("NOT ENOUGH MEMORY TO DECODE ANYTHING", None, None, None, None, 0)
 
     opcode = memory[0]
-    prefix_context_register_fix = lambda x: x
+    prefix_context_register_fix = lambda x, y: x
 
     if opcode == 0xDD:
         if len(memory) < 2:
@@ -312,7 +321,7 @@ def decode_full(memory):
                     param_2, size_2 = param_2
 
                     decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2, )
-                    decoded_instrction = prefix_context_register_fix(decoded_instruction)
+                    decoded_instruction = prefix_context_register_fix(decoded_instruction, memory[1:])
 
                     return decoded_instruction
 
@@ -889,6 +898,13 @@ class DecodeDDPrefixTestCase(unittest.TestCase):
         memory = [0xDD, 0xFD]
         expected = ("NONI", None, None, None, None)
         self.assertEqual(expected, decode(memory))
+
+    def test_dec_with_dd_prefix(self):
+        memory = [0xDD, 0x35, 0x00]
+        expected = ("DEC", P_REGISTER_INDEXED, (REG_IX, 0), None, None)
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(3, size)
 
 
 if __name__ == '__main__':

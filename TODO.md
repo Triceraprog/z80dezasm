@@ -1,2 +1,3 @@
 - The masks for opcode decoding can be optimized by complete masking and hashing
 - Is separation between REGISTERs and REGISTER_PAIRs necessary?
+- REG_AT_HL is really an indexed based + 0 displacement
