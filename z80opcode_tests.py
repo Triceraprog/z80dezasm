@@ -641,6 +641,12 @@ class DecodeDDPrefixTestCase(unittest.TestCase):
         size = decode_full(memory)[-1]
         self.assertEqual(3, size)
 
+        memory = [0xDD, 0x36, 0x00, 0x01]
+        expected = ("LD", P_REGISTER_INDEXED, (REG_IX, 0), P_IMMEDIATE_8, 1)
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(4, size)
+
 
 if __name__ == '__main__':
     unittest.main()
