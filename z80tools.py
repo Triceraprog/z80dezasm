@@ -142,6 +142,11 @@ def register_from_z(splitted_opcode, memory):
     return P_REGISTER, REGISTERS[z]
 
 
+def address_from_y(splitted_opcode, memory):
+    _, y, _, _, _ = splitted_opcode
+    return P_IMMEDIATE_16, y * 8
+
+
 ALU_MNEMONICS = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
 
 def alu_opcode_from_y(splitted_opcode):
@@ -225,6 +230,8 @@ table = [((0, 0, 0), "NOP", None, None),
          ((3, 5, 1, 3), "FD PREFIX TODO", None, None),
 
          ((3, 6, range(0, 8)), alu_opcode_from_y, register(REG_A), immediate_8_decode),
+
+         ((3, 7, range(0, 8)), "RST", None, address_from_y),
          ]
 
 
@@ -824,6 +831,19 @@ class DecodeTestCase(unittest.TestCase):
 
         memory = [0xFE, 0x20]
         expected = ("CP", P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_rst(self):
+        memory = [0xC7]
+        expected = ("RST", None, None, P_IMMEDIATE_16, 0x00)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xCF]
+        expected = ("RST", None, None, P_IMMEDIATE_16, 0x08)
+        self.assertEqual(expected, decode(memory))
+
+        memory = [0xFF]
+        expected = ("RST", None, None, P_IMMEDIATE_16, 0x38)
         self.assertEqual(expected, decode(memory))
 
 
