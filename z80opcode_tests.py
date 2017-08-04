@@ -712,6 +712,5 @@ class DecodeFDPrefixTestCase(unittest.TestCase):
         self.assertEqual(2, size)
 
 
-
 if __name__ == '__main__':
     unittest.main()
