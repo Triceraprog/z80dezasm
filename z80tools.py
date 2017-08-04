@@ -107,17 +107,12 @@ def immediate_16_indirect_decode(splitted_opcode, memory):
 
 def register(register_name):
     param_type = P_REGISTER_PAIR if register_name.endswith("_P") else P_REGISTER
-    def decode_direct_register(splitted_opcode, memory):
-        return (param_type, register_name), 0
 
-    return decode_direct_register
+    return lambda splitted_opcode, memory: ((param_type, register_name), 0)
 
 
 def register_pair_indirect(register_name):
-    def decode_direct_register(splitted_opcode, memory):
-        return (P_REGISTER_PAIR_INDIRECT, register_name), 0
-
-    return decode_direct_register
+    return lambda splitted_opcode, memory: ((P_REGISTER_PAIR_INDIRECT, register_name), 0)
 
 
 def register_pair_from_p(splitted_opcode, memory):
