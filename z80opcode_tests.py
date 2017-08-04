@@ -552,6 +552,23 @@ class DecodeTestCase(unittest.TestCase):
         self.assertEqual(expected, decode(memory))
 
 
+class DecodeCBPrefixTestCase(unittest.TestCase):
+    def test_decode_of_bit(self):
+        memory = [0xCB, 0x7F]
+        expected = ("BIT", P_IMMEDIATE_8, 7, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_res(self):
+        memory = [0xCB, 0x96]
+        expected = ("RES", P_IMMEDIATE_8, 2, P_REGISTER, REG_AT_HL)
+        self.assertEqual(expected, decode(memory))
+
+    def test_decode_of_set(self):
+        memory = [0xCB, 0xF7]
+        expected = ("SET", P_IMMEDIATE_8, 6, P_REGISTER, REG_A)
+        self.assertEqual(expected, decode(memory))
+
+
 class DecodeEDPrefixTestCase(unittest.TestCase):
     def test_decode_of_in_16_bits(self):
         memory = [0xED, 0x40]

@@ -140,6 +140,11 @@ def address_from_y(splitted_opcode, memory):
     return (P_IMMEDIATE_16, y * 8), 0
 
 
+def constant_from_y(splitted_opcode, memory):
+    _, y, _, _, _ = splitted_opcode
+    return (P_IMMEDIATE_8, y), 0
+
+
 def constant_8bits(value):
     return lambda splitted_opcode, memory: ((P_IMMEDIATE_8, value), 0)
 
@@ -205,6 +210,12 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
 
             ((2, range(0, 4), range(4, 8)), block_opcode_from_yz, None, None)
              ]
+
+cb_table = [((1, range(0, 8), range(0, 8)), "BIT", constant_from_y, register_from_z),
+            ((2, range(0, 8), range(0, 8)), "RES", constant_from_y, register_from_z),
+            ((3, range(0, 8), range(0, 8)), "SET", constant_from_y, register_from_z),
+             ]
+
 table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
          ((0, 0, 2), "DJNZ", None, displacement_decode),
@@ -333,6 +344,11 @@ def decode_full(memory):
 
     if opcode == 0xED:
         current_table = ed_table
+        memory = memory[1:]
+        opcode = memory[0]
+
+    if opcode == 0xCB:
+        current_table = cb_table
         memory = memory[1:]
         opcode = memory[0]
 
