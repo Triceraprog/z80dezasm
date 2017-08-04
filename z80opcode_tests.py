@@ -601,6 +601,11 @@ class DecodeEDPrefixTestCase(unittest.TestCase):
         expected = ("OUT", P_REGISTER_PAIR_INDIRECT, REG_BC, P_IMMEDIATE_8, 0)
         self.assertEqual(expected, decode(memory))
 
+    def test_decode_of_adc_sbc_16_bits(self):
+        memory = [0xED, 0x4A]
+        expected = ("ADC", P_REGISTER_PAIR, REG_HL, P_REGISTER_PAIR, REG_BC)
+        self.assertEqual(expected, decode(memory))
+
     def test_decode_of_ld_16_bits_immediate_address(self):
         memory = [0xED, 0x43, 0x0E, 0x48]
         expected = ("LD", P_IMMEDIATE_16_INDIRECT, 0x480E, P_REGISTER_PAIR, REG_BC)
