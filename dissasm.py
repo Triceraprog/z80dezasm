@@ -7,6 +7,9 @@ size = len(romContent)
 
 pc = 0
 while (pc < size):
+	if pc >= 0x1140 and pc < 0x1945:
+		pc = 0x1945
+
 	decoded = decode_full(romContent[pc:])
 	decoded_size = decoded[-1]
 

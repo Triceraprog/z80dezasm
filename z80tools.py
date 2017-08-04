@@ -232,6 +232,7 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
             ((1, 1, 7), "OUT", register_pair_indirect(REG_BC), register_from_y),
             ((1, 2, 1, range(0, 8)), "ADC", register(REG_HL), register_pair_from_p),
             ((1, 3, 0, range(0, 8)), "LD", immediate_16_indirect_decode, register_pair_from_p),
+            ((1, 3, 1, range(0, 8)), "LD", register_pair_from_p, immediate_16_indirect_decode),
             ((1, 5, 0), "RETN", None, None),
             ((1, 5, 1), "RETI", None, None),
             ((1, 5, range(2, 8)), "RETN", None, None),

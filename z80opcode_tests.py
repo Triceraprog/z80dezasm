@@ -613,6 +613,12 @@ class DecodeEDPrefixTestCase(unittest.TestCase):
         size = decode_full(memory)[-1]
         self.assertEqual(4, size)
 
+        memory = [0xED, 0x5B, 0x8E, 0x48]
+        expected = ("LD", P_REGISTER_PAIR, REG_DE, P_IMMEDIATE_16_INDIRECT, 0x488E)
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(4, size)
+
     def test_decode_of_retn(self):
         memory = [0xED, 0x45]
         expected = ("RETN", None, None, None, None)
