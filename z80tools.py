@@ -43,6 +43,7 @@ REG_DE = "R_DE_P"
 REG_HL = "R_HL_P"
 REG_SP = "R_SP_P"
 REG_IX = "R_IX_P"
+REG_IY = "R_IY_P"
 
 REG_B = "R_B"
 REG_C = "R_C"
@@ -190,24 +191,25 @@ def condition_register(register_shift=0):
     return decode_direct_register
 
 
-def register_fix_for_dd_prefix(decoded, memory):
+def register_fix_for_dd_and_fd_prefix(decoded, memory, prefix):
     mnemonic, p1, v1, p2, v2, size = decoded
     result = None
+
+    substitute = REG_IX if prefix == 0xDD else REG_IY
 
     if p1 == P_REGISTER and v1 == REG_AT_HL:
         if p2 == None or (p2 == P_REGISTER and v2 == REG_A):
             (_, disp), _ = displacement_decode(None, memory[0:])
-            result = mnemonic, P_REGISTER_INDEXED, (REG_IX, disp), p2, v2, size + 2
+            result = mnemonic, P_REGISTER_INDEXED, (substitute, disp), p2, v2, size + 2
         elif p2 == P_IMMEDIATE_8:
             (_, disp), _ = displacement_decode(None, memory[0:])
             (_, value), _ = immediate_8_decode(None, memory[1:])
-            result = mnemonic, P_REGISTER_INDEXED, (REG_IX, disp), p2, value, size + 2
-
+            result = mnemonic, P_REGISTER_INDEXED, (substitute, disp), p2, value, size + 2
 
     elif p2 == P_REGISTER and v2 == REG_AT_HL:
         if p1 == P_REGISTER:
             (p, value), p_size = displacement_decode(None, memory[size - 1:])
-            result = mnemonic, p1, v1, P_REGISTER_INDEXED, (REG_IX, value), size + p_size + 1
+            result = mnemonic, p1, v1, P_REGISTER_INDEXED, (substitute, value), size + p_size + 1
 
     elif (mnemonic == "EX" and
           p1 == P_REGISTER_PAIR and v1 == REG_DE and
@@ -215,10 +217,10 @@ def register_fix_for_dd_prefix(decoded, memory):
         return decoded
 
     elif p1 == P_REGISTER_PAIR and v1 == REG_HL:
-        if p2 == P_IMMEDIATE_16:
-            result = mnemonic, p1, REG_IX, p2, v2, size + 1
+        if p2 == None or p2 == P_IMMEDIATE_16:
+            result = mnemonic, p1, substitute, p2, v2, size + 1
 
-    return result or ("DD PREFIX TODO", None, None, None, None, 1)
+    return result or ("DD/FD PREFIX TODO", None, None, None, None, 1)
 
 
 # Format on the table is
@@ -361,18 +363,20 @@ def decode_full(memory):
 
     opcode = memory[0]
     current_table = table
-    prefix_context_register_fix = lambda x, y: x
+    prefix_context_register_fix = lambda x, y, z: x
+    prefix = 0
 
-    if opcode == 0xDD:
+    if opcode == 0xDD or opcode == 0xFD:
         if len(memory) < 2:
             return ("NOT ENOUGH MEMORY TO DECODE WITH DD PREFIX", None, None, None, None, 0)
+        prefix = opcode
         memory = memory[1:]
         opcode = memory[0]
         if opcode in (0xDD, 0xED, 0xFD):
             return ("NONI", None, None, None, None, 1)
         if opcode == 0xCB:
             return ("DDCB PREFIX TODO", None, None, None, None, 4)
-        prefix_context_register_fix = register_fix_for_dd_prefix
+        prefix_context_register_fix = register_fix_for_dd_and_fd_prefix
 
     prefix_size = 0
 
@@ -408,7 +412,7 @@ def decode_full(memory):
                     param_2, size_2 = param_2
 
                     decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2 + prefix_size, )
-                    decoded_instruction = prefix_context_register_fix(decoded_instruction, memory[1:])
+                    decoded_instruction = prefix_context_register_fix(decoded_instruction, memory[1:], prefix)
 
                     return decoded_instruction
 

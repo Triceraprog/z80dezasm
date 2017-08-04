@@ -5,10 +5,13 @@ with open("vg5000_1.1.rom", "rb") as romFile:
 
 size = len(romContent)
 
+data_ranges = {0x1148: 0x1945, 0x2000: 0x2214}
+
 pc = 0
 while (pc < size):
-	if pc >= 0x1140 and pc < 0x1945:
-		pc = 0x1945
+
+	if pc in data_ranges:
+		pc = data_ranges[pc]
 
 	decoded = decode_full(romContent[pc:])
 	decoded_size = decoded[-1]

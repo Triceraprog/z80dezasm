@@ -697,5 +697,15 @@ class DecodeDDPrefixTestCase(unittest.TestCase):
         self.assertEqual(4, size)
 
 
+class DecodeFDPrefixTestCase(unittest.TestCase):
+    def test_ignore_dd_if_another_conflicting_prefix(self):
+        memory = [0xFD, 0xE1]
+        expected = ("POP", P_REGISTER_PAIR, REG_IY, None, None)
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(2, size)
+
+
+
 if __name__ == '__main__':
     unittest.main()
