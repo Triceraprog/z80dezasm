@@ -2,7 +2,9 @@ import unittest
 
 from z80tools import *
 
-def get_param_str(param, value):
+def get_param_str(param, value, options):
+	hex_prefix = options.get("hex_prefix", "0x")
+
 	if param == P_REGISTER_PAIR:
 		if value == REG_AF_PRIME:
 			return "AF'"
@@ -22,16 +24,16 @@ def get_param_str(param, value):
 			return value[2:]
 
 	if param == P_IMMEDIATE_16:
-		return "0x%04X" % value
+		return hex_prefix + "%04X" % value
 
 	if param == P_IMMEDIATE_16_INDIRECT:
-		return "(0x%04X)" % value
+		return "(" + hex_prefix + "%04X)" % value
 
 	if param == P_IMMEDIATE_8:
-		return "0x%02X" % value
+		return hex_prefix + "%02X" % value
 
 	if param == P_IMMEDIATE_8_INDIRECT:
-		return "(0x%02X)" % value
+		return "(" + hex_prefix + "%02X)" % value
 
 	if param == P_CONDITION:
 		return value[5:]
@@ -43,16 +45,16 @@ def get_param_str(param, value):
 		register_pair, displacement = value
 		sign = "+" if displacement >= 0 else "-"
 		displacement = abs(displacement)
-		return "(%s%s0x%02X)" % (register_pair[2:4], sign, displacement)
+		return "(%s%s%s%02X)" % (register_pair[2:4], sign, hex_prefix, displacement)
 
 	return None
 
 
-def decoded_to_string(decoded):
+def decoded_to_string(decoded, options={}):
 	mnemonic, p1, v1, p2, v2 = decoded
 
-	param1_str = get_param_str(p1, v1)
-	param2_str = get_param_str(p2, v2)
+	param1_str = get_param_str(p1, v1, options)
+	param2_str = get_param_str(p2, v2, options)
 
 	# if mnemonic in ("CP", "OR", "SUB") and param1_str == "A":
 	#	param1_str = None
@@ -145,6 +147,13 @@ class FromDecodedToStrinTestCase(unittest.TestCase):
 		expected = ('LD', 'A,(IX+0x03)')
 
 		output = decoded_to_string(decoded)
+		self.assertEqual(expected,  output)
+
+	def test_alternate_hex_writing(self):
+		decoded = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2238)
+		expected = ('JP', 'NZ,$2238')
+
+		output = decoded_to_string(decoded, {"hex_prefix": "$"})
 		self.assertEqual(expected,  output)
 
 

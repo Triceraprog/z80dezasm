@@ -7,6 +7,7 @@ with open("vg5000_1.1.rom", "rb") as romFile:
 size = len(romContent)
 
 data_ranges = {0x0003: 0x0008, 0x0026: 0x0028, 0x1148: 0x1945, 0x2000: 0x2214}
+hex_prefix = "$"
 
 pc = 0
 while (pc < size):
@@ -20,12 +21,13 @@ while (pc < size):
 	byte_list = ["%02x" % x for x in romContent[pc:pc+decoded_size]]
 	byte_string = " ".join(byte_list)
 
-	string = decoded_to_string(decoded[:-1])
+	string = decoded_to_string(decoded[:-1], options={"hex_prefix": hex_prefix})
 
 	label = ""
 
-	line = "{label:<12} {mnemonic:<8} {args:<15} ; 0x{pc:0<4x} {bytes:<15} ;".format(
+	line = "{label:<12} {mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0<4x} {bytes:<15} ;".format(
 		label=label,
+		hex_prefix=hex_prefix,
 		pc=pc,
 		bytes=byte_string,
 		mnemonic=string[0].lower(),
