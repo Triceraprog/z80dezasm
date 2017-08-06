@@ -5,3 +5,19 @@
 - Comments and labels at specific adresses
 - Labels with code or data
 - Follow the code jumps
+- Decoding
+  - First mark $0000 as code
+  - A code region is decoded until an unconditional JUMP is reached (JP or JR without condition)
+  - This "end" marks a new code region
+  - Every JP or JR address is memorized along the way
+  - Every memorized address is added as a label (warning, it can happen that a label is "inside" a full opcode, becase of nasty assembly tricks 0x101a/0x101b on VG5000) if not already known
+  - Every memorized address that is not in a known code region is added to pending starting code region
+  - Start over with a new region
+  - An initial list of marked starting code region can also be loaded
+- Labels
+  - Labels are loaded with "address", "name"
+- Comments
+  - Comments are loaded with either
+    - "Comment: address/label place (block above or default/right" CR "comment"
+    - "Comment: address/label comment on one line"
+
