@@ -71,7 +71,7 @@ def decoded_to_string(decoded, options={}):
 	return (mnemonic, param_str)
 
 
-class FromDecodedToStrinTestCase(unittest.TestCase):
+class FromDecodedToStringTestCase(unittest.TestCase):
 	def test_immediate_16(self):
 		decoded = ('JP', None, None, P_IMMEDIATE_16, 4096)
 		expected = ('JP', '0x1000')
