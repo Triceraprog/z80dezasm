@@ -207,8 +207,8 @@ def register_fix_for_dd_and_fd_prefix(decoded, memory, prefix):
             result = mnemonic, P_REGISTER_INDEXED, (substitute, disp), p2, value, size + 2
 
     elif p2 == P_REGISTER and v2 == REG_AT_HL:
-        if p1 == P_REGISTER:
-            (p, value), p_size = displacement_decode(None, memory[size - 1:])
+        if p1 == P_REGISTER or p1 == P_IMMEDIATE_8:
+            (p, value), p_size = displacement_decode(None, memory[0:])
             result = mnemonic, p1, v1, P_REGISTER_INDEXED, (substitute, value), size + p_size + 1
 
     elif (mnemonic == "EX" and
@@ -378,9 +378,13 @@ def decode_full(memory):
         opcode = memory[0]
         if opcode in (0xDD, 0xED, 0xFD):
             return ("NONI", None, None, None, None, 1)
-        if opcode == 0xCB:
-            return ("DDCB PREFIX TODO", None, None, None, None, 4)
-        prefix_context_register_fix = register_fix_for_dd_and_fd_prefix
+        elif opcode == 0xCB:
+            # Tweaking memory to put the displacement after the opcode byte
+            # and let the 0xCB prefix act
+            memory = [memory[0], memory[2], memory[1]]
+            prefix_context_register_fix = register_fix_for_dd_and_fd_prefix
+        else:
+            prefix_context_register_fix = register_fix_for_dd_and_fd_prefix
 
     prefix_size = 0
 

@@ -24,7 +24,7 @@ while (pc < size):
 
 	print("0x%04x %14s | %-6s %-30s ; %s" % (pc, byte_string, string[0].lower(), string[1].lower(), decoded))
 
-	if "TODO" in decoded[0] and "DDCB" not in decoded[0]:
+	if "TODO" in decoded[0]:
 		size = pc + 5
 
 	if decoded_size == 0:

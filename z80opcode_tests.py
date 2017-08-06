@@ -712,5 +712,20 @@ class DecodeFDPrefixTestCase(unittest.TestCase):
         self.assertEqual(2, size)
 
 
+class DecodeDDCBPrefixTestCase(unittest.TestCase):
+    def test_ddcb_set_bit_and_reset(self):
+        memory = [0xDD, 0xCB, 0x01, 0x46]
+        expected = ("BIT", P_IMMEDIATE_8, 0, P_REGISTER_INDEXED, (REG_IX, 1))
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(4, size)
+
+        memory = [0xDD, 0xCB, 0x01, 0x86]
+        expected = ("RES", P_IMMEDIATE_8, 0, P_REGISTER_INDEXED, (REG_IX, 1))
+        self.assertEqual(expected, decode(memory))
+        size = decode_full(memory)[-1]
+        self.assertEqual(4, size)
+
+
 if __name__ == '__main__':
     unittest.main()
