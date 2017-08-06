@@ -54,8 +54,8 @@ def decoded_to_string(decoded):
 	param1_str = get_param_str(p1, v1)
 	param2_str = get_param_str(p2, v2)
 
-	if mnemonic in ("CP", "OR", "SUB") and param1_str == "A":
-		param1_str = None
+	# if mnemonic in ("CP", "OR", "SUB") and param1_str == "A":
+	#	param1_str = None
 
 	if param1_str is None and param2_str is None:
 		param_str = ""
@@ -100,7 +100,7 @@ class FromDecodedToStrinTestCase(unittest.TestCase):
 
 	def test_register(self):
 		decoded = ('CP', P_REGISTER, REG_A, P_REGISTER, REG_AT_HL)
-		expected = ('CP', '(HL)') # Exception, ommiting the implied A
+		expected = ('CP', 'A,(HL)')
 
 		output = decoded_to_string(decoded)
 		self.assertEqual(expected,  output)
@@ -114,7 +114,7 @@ class FromDecodedToStrinTestCase(unittest.TestCase):
 
 	def test_immediate_8(self):
 		decoded = ('CP', P_REGISTER, REG_A, P_IMMEDIATE_8, 0x3A)
-		expected = ('CP', '0x3A') # Exception, ommiting the implied A
+		expected = ('CP', 'A,0x3A')
 
 		output = decoded_to_string(decoded)
 		self.assertEqual(expected,  output)

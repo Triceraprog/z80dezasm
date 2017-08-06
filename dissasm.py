@@ -22,7 +22,16 @@ while (pc < size):
 
 	string = decoded_to_string(decoded[:-1])
 
-	print("0x%04x %14s | %-6s %-30s ; %s" % (pc, byte_string, string[0].lower(), string[1].lower(), decoded))
+	label = ""
+
+	line = "{label:<12} {mnemonic:<8} {args:<15} ; 0x{pc:0<4x} {bytes:<15} ;".format(
+		label=label,
+		pc=pc,
+		bytes=byte_string,
+		mnemonic=string[0].lower(),
+		args=string[1].lower())
+	print(line)
+	# print("0x%04x %14s | %-6s %-30s ; %s" % (pc, byte_string, string[0].lower(), string[1].lower(), decoded))
 
 	if "TODO" in decoded[0]:
 		size = pc + 5
