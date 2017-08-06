@@ -65,6 +65,9 @@ def decoded_to_string(decoded, options={}):
         if param2_str == "(BC)":
             param2_str = "(C)"
 
+    if mnemonic == "JP" and param2_str == "HL":
+        param2_str = "(HL)"
+
     if param1_str is None and param2_str is None:
         param_str = ""
     elif param2_str is None:
@@ -167,6 +170,38 @@ class FromDecodedToStringTestCase(unittest.TestCase):
         expected = ('OUT', '(C),A')
 
         output = decoded_to_string(decoded)
+        self.assertEqual(expected,  output)
+
+    def test_jp_hl_written_as_jp_at_hl(self):
+        decoded = ('JP', None, None, P_REGISTER_PAIR, REG_HL)
+        expected = ('JP', '(HL)')
+
+        output = decoded_to_string(decoded)
+        self.assertEqual(expected,  output)
+
+
+def adjust_displacement(fully_decoded, reference_pc):
+    mnemonic, p1, v1, p2, v2, size = fully_decoded
+
+    if mnemonic in ("JR", "DJNZ") and p2 == P_DISPLACEMENT:
+        fully_decoded = mnemonic, p1, v1, P_IMMEDIATE_16, reference_pc + v2 + size, size
+
+    return fully_decoded
+
+
+class RelativeJumpAddressAdjustTestCase(unittest.TestCase):
+    def test_displacement_adjustement_for_jr(self):
+        full_decoded = ('JR', P_CONDITION, COND_NZ, P_DISPLACEMENT, -14, 2)
+        output = adjust_displacement(full_decoded, 0x0010)
+
+        expected = ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x0004, 2)
+        self.assertEqual(expected,  output)
+
+    def test_displacement_adjustement_for_djnz(self):
+        full_decoded = ('DJNZ', None, None, P_DISPLACEMENT, -14, 2)
+        output = adjust_displacement(full_decoded, 0x0010)
+
+        expected = ('DJNZ', None, None, P_IMMEDIATE_16, 0x0004, 2)
         self.assertEqual(expected,  output)
 
 

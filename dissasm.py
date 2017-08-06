@@ -1,17 +1,20 @@
 from z80tools import decode_full
-from z80opcode_strings import decoded_to_string
+from z80opcode_strings import decoded_to_string, adjust_displacement
 
 
 def decode_code(pc, memory, options):
 	decoded = decode_full(memory[pc:])
+	decoded = adjust_displacement(decoded, pc)
+
 	decoded_size = decoded[-1]
 
 	byte_list = ["%02x" % x for x in memory[pc:pc+decoded_size]]
 	byte_string = " ".join(byte_list)
 
+
 	string = decoded_to_string(decoded[:-1], options=options)
 
-	line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0<4x} {bytes:<15} ;".format(
+	line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ;".format(
 		hex_prefix=options.get("hex_prefix", "0x"),
 		pc=pc,
 		bytes=byte_string,
