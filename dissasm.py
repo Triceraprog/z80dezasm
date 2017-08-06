@@ -1,44 +1,71 @@
 from z80tools import decode_full
 from z80opcode_strings import decoded_to_string
 
-with open("vg5000_1.1.rom", "rb") as romFile:
-	romContent = romFile.read()
 
-size = len(romContent)
-
-data_ranges = {0x0003: 0x0008, 0x0026: 0x0028, 0x1148: 0x1945, 0x2000: 0x2214}
-hex_prefix = "$"
-
-pc = 0
-while (pc < size):
-
-	if pc in data_ranges:
-		pc = data_ranges[pc]
-
-	decoded = decode_full(romContent[pc:])
+def decode_code(pc, memory, options):
+	decoded = decode_full(memory[pc:])
 	decoded_size = decoded[-1]
 
-	byte_list = ["%02x" % x for x in romContent[pc:pc+decoded_size]]
+	byte_list = ["%02x" % x for x in memory[pc:pc+decoded_size]]
 	byte_string = " ".join(byte_list)
 
-	string = decoded_to_string(decoded[:-1], options={"hex_prefix": hex_prefix})
+	string = decoded_to_string(decoded[:-1], options=options)
 
-	label = ""
-
-	line = "{label:<12} {mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0<4x} {bytes:<15} ;".format(
-		label=label,
-		hex_prefix=hex_prefix,
+	line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0<4x} {bytes:<15} ;".format(
+		hex_prefix=options.get("hex_prefix", "0x"),
 		pc=pc,
 		bytes=byte_string,
 		mnemonic=string[0].lower(),
 		args=string[1].lower())
-	print(line)
-	# print("0x%04x %14s | %-6s %-30s ; %s" % (pc, byte_string, string[0].lower(), string[1].lower(), decoded))
 
-	if "TODO" in decoded[0]:
-		size = pc + 5
+	return decoded_size, line
 
-	if decoded_size == 0:
-		exit(0)
-	pc += decoded_size
+def decode_data(pc, memory, options):
+	data = memory[pc]
+	line = "{mnemonic:<8} {hex_prefix}{data:0<2x}".format(
+		mnemonic="defb",
+		hex_prefix=options.get("hex_prefix", "0x"),
+		data=data
+		)
+	return 1, line
 
+def main():
+	with open("vg5000_1.1.rom", "rb") as romFile:
+		romContent = romFile.read()
+
+	size = len(romContent)
+
+	data_ranges = {0x0003: 0x0008, 0x0026: 0x0028, 0x1148: 0x1945, 0x2000: 0x2214}
+	hex_prefix = "$"
+
+	options = {"hex_prefix": hex_prefix}
+
+	decoding_function = decode_code
+
+	pc = 0
+	end_data_range = None
+	while (pc < size):
+		if pc in data_ranges:
+			end_data_range = data_ranges[pc]
+			decoding_function = decode_data
+
+		if pc == end_data_range:
+			decoding_function = decode_code
+
+		decoded_size, line = decoding_function(pc, romContent, options)
+
+		label = ""
+		labeled_line = "{label:<12} {line}".format(label=label, line=line)
+
+		print(labeled_line)
+
+		if "TODO" in line:
+			exit(1)
+
+		if decoded_size == 0:
+			exit(1)
+
+		pc += decoded_size
+
+if __name__ == '__main__':
+	main()

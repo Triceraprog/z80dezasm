@@ -1,9 +1,7 @@
 - The masks for opcode decoding can be optimized by complete masking and hashing
 - Is separation between REGISTERs and REGISTER_PAIRs necessary?
-- REG_AT_HL is really an indexed based + 0 displacement... not really, it's considered an 8 bit register, sort of
 - Comment JR displacements with absolute address
-- DD CB prefix case
-- Mark the data parts
+- Mark the data, code and unkown parts
 - Comments and labels at specific adresses
 - Labels with code or data
 - Follow the code jumps
