@@ -163,10 +163,10 @@ def alu_opcode_from_y(splitted_opcode):
 
 
 BLOCK_MNEMONICS = [
-        ["LDI", "LDD", "INI", "OUTI"],
-        ["CPI", "CPD", "IND", "OUTD"],
-        ["LDI", "CPIR", "INIR", "OTIR"],
-        ["LDI", "CPDR", "INDR", "OTDR"],
+        ["LDI", "CPI", "INI", "OUTI"],
+        ["LDD", "CPD", "IND", "OUTD"],
+        ["LDIR", "CPIR", "INIR", "OTIR"],
+        ["LDDR", "CPDR", "INDR", "OTDR"],
     ]
 
 def block_opcode_from_yz(splitted_opcode):

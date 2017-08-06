@@ -643,6 +643,10 @@ class DecodeEDPrefixTestCase(unittest.TestCase):
         expected = ("OUTI", None, None, None, None)
         self.assertEqual(expected, decode(memory))
 
+        memory = [0xED, 0xB0]
+        expected = ("LDIR", None, None, None, None)
+        self.assertEqual(expected, decode(memory))
+
 
 class DecodeDDPrefixTestCase(unittest.TestCase):
     def test_ignore_dd_if_another_conflicting_prefix(self):

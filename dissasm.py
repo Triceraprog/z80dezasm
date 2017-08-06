@@ -25,7 +25,7 @@ def decode_code(pc, memory, options):
 
 def decode_data(pc, memory, options):
 	data = memory[pc]
-	line = "{mnemonic:<8} {hex_prefix}{data:0<2x}".format(
+	line = "{mnemonic:<8} {hex_prefix}{data:0>2x}".format(
 		mnemonic="defb",
 		hex_prefix=options.get("hex_prefix", "0x"),
 		data=data
