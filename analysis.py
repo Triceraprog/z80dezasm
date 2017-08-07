@@ -29,7 +29,7 @@ def find_next_unconditionnal_jump(memory, start):
     return decoded_instructions, (pc - start)
 
 
-def test_adjust_relative_displacements(instructions):
+def adjust_relative_displacements(instructions):
     new_instructions = []
     for pc, instruction in instructions:
         mnemonic, p1, v1, p2, v2, size = instruction
@@ -39,6 +39,16 @@ def test_adjust_relative_displacements(instructions):
         new_instructions.append((pc, instruction))
 
     return new_instructions
+
+
+def collect_address_references(instructions):
+    references = []
+    for pc, instruction in instructions:
+        mnemonic, p1, v1, p2, v2, size = instruction
+        if mnemonic in ("JP", "JR", "DJNZ") and p2 == P_IMMEDIATE_16:
+            references.append(v2)
+
+    return references
 
 
 class RomCodeTestCase(unittest.TestCase):
@@ -57,11 +67,23 @@ class RomCodeTestCase(unittest.TestCase):
                         (0x1003, ('DJNZ', None, None, P_DISPLACEMENT, -5, 2)),
                         (0x1005, ('JR', P_CONDITION, COND_NZ, P_DISPLACEMENT, 4, 2))]
 
-        new_instructions = test_adjust_relative_displacements(instructions)
+        new_instructions = adjust_relative_displacements(instructions)
 
         self.assertEqual(0x0009, new_instructions[0][1][4])
         self.assertEqual(0x1000, new_instructions[1][1][4])
         self.assertEqual(0x100B, new_instructions[2][1][4])
+
+    def test_collect_address_references_from_instrctions(self):
+        instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 9, 3)),
+                        (0x1003, ('DJNZ', None, None, P_IMMEDIATE_16, 0x1000, 2)),
+                        (0x1005, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x100B, 2))]
+
+        references = collect_address_references(instructions)
+
+        self.assertEqual(3, len(references))
+        self.assertIn(0x0009, references)
+        self.assertIn(0x1000, references)
+        self.assertIn(0x100B, references)
 
 
 if __name__ == '__main__':

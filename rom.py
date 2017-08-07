@@ -103,7 +103,7 @@ class RomTestCase(unittest.TestCase):
 
 	def test_rom_can_be_iterated_by_ranges(self):
 		pass
-		
+
 
 if __name__ == '__main__':
     unittest.main()
