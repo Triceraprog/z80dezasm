@@ -3,16 +3,12 @@ import unittest
 from z80tools import decode_full, P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ
 from rom import Rom
 
-# Memory content reads as
-# JP 0x0009
-# DEFM "PRINT", 0
-# JP 0x0000
-
-memory = [0xC3, 0x09, 0x00, 0x50, 0x52, 0x49, 0x4E, 0x54, 0x00, 0xC3, 0x00, 0x00]
-
 def is_unconditionnal_jump(fully_decoded):
     mnemonic, p1, v1, p2, v2, size = fully_decoded
-    return mnemonic in ("JP", "JR") and p1 == None and (p2 == P_IMMEDIATE_16 or p2 == P_DISPLACEMENT)
+    return ((mnemonic in ("JP", "JR") and p1 == None and (p2 == P_IMMEDIATE_16 or p2 == P_DISPLACEMENT))
+            or
+            (mnemonic in ("RET", "RETI", "RETN") and p1 == None and p2 == None))
+
 
 
 def find_next_unconditionnal_jump(memory, start):
@@ -46,7 +42,7 @@ def collect_address_references(instructions):
     references = []
     for pc, instruction in instructions:
         mnemonic, p1, v1, p2, v2, size = instruction
-        if mnemonic in ("JP", "JR", "DJNZ") and p2 == P_IMMEDIATE_16:
+        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 == P_IMMEDIATE_16:
             references.append(v2)
 
     return references
@@ -57,21 +53,29 @@ def mark_all_code_regions(rom, starting_addresses):
         start = starting_addresses[0]
         starting_addresses = starting_addresses[1:]
 
-        instructions, total_size = find_next_unconditionnal_jump(memory, start)
-        rom.mark_code(start, start + total_size)
+        if rom.get_type(start) == 'unknown':
+            instructions, total_size = find_next_unconditionnal_jump(rom.memory, start)
+            rom.mark_code(start, start + total_size)
 
-        instructions = adjust_relative_displacements(instructions)
-        references = collect_address_references(instructions)
+            instructions = adjust_relative_displacements(instructions)
+            references = collect_address_references(instructions)
 
-        references = [r for r in references if rom.get_type(r) == 'unknown']
+            references = [r for r in references if rom.get_type(r) == 'unknown']
 
-        starting_addresses.extend(references)
+            starting_addresses.extend(references)
 
     return rom
 
 
 class RomCodeTestCase(unittest.TestCase):
     def test_from_a_start_point_go_to_next_unconditional_jump(self):
+        # Memory content reads as
+        # JP 0x0009
+        # DEFM "PRINT", 0
+        # JP 0x0000
+
+        memory = [0xC3, 0x09, 0x00, 0x50, 0x52, 0x49, 0x4E, 0x54, 0x00, 0xC3, 0x00, 0x00]
+
         start = 0x0000
         instructions, total_size = find_next_unconditionnal_jump(memory, start)
         self.assertEqual(1, len(instructions))
@@ -95,14 +99,18 @@ class RomCodeTestCase(unittest.TestCase):
     def test_collect_address_references_from_instrctions(self):
         instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 9, 3)),
                         (0x1003, ('DJNZ', None, None, P_IMMEDIATE_16, 0x1000, 2)),
-                        (0x1005, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x100B, 2))]
+                        (0x1005, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x100B, 2)),
+                        (0x1007, ('CALL', None, None, P_IMMEDIATE_16, 0x2000, 3)),
+                        (0x100A, ('RST', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x0038, 1))]
 
         references = collect_address_references(instructions)
 
-        self.assertEqual(3, len(references))
+        self.assertEqual(5, len(references))
         self.assertIn(0x0009, references)
         self.assertIn(0x1000, references)
         self.assertIn(0x100B, references)
+        self.assertIn(0x2000, references)
+        self.assertIn(0x0038, references)
 
 
 class RomCodeAnalysisProcessTestCase(unittest.TestCase):
