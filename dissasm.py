@@ -41,6 +41,10 @@ def new_main():
 
     starting_addresses = [0x0000]
 
+    # Adding RST addresses
+    for rst in range(1, 8):
+        starting_addresses.append(rst * 8)
+
     rom = Rom(romContent)
     rom = mark_all_code_regions(rom, starting_addresses)
 
