@@ -1,4 +1,5 @@
 import unittest
+import functools
 
 
 class Rom():
@@ -23,8 +24,8 @@ class Rom():
 	def __mark_range(self, begin, end, range_type):
 		""" begin is inclusive, end is exclusive, to be coherent with range()"""
 		existing_range = self.__find_overlapping_range(begin, end)
-
 		new_range = ((begin, end), range_type)
+
 		if not existing_range:
 			self.ranges.append(new_range)
 		else:
@@ -44,6 +45,8 @@ class Rom():
 
 			self.ranges.append(new_range)
 
+		self.__merge_adjacent_ranges()
+
 	def __find_overlapping_range(self, begin, end):
 		for r in sorted(self.ranges):
 			limits = r[0]
@@ -57,6 +60,27 @@ class Rom():
 	def __find_range(self, address):
 		found_range = [r for r in self.ranges if address in range(*(r[0]))]
 		return found_range[0] if found_range else None
+
+	def __merge_adjacent_ranges(self):
+		new_ranges = functools.reduce(merge_neighbours, sorted(self.ranges), [])
+		self.ranges = new_ranges
+
+
+def merge_neighbours(acc, new):
+	if len(acc) > 0:
+		previous = acc[-1]
+		((b_old, e_old), t_old) = previous
+		((b_new, e_new), t_new) = new
+
+		if t_old == t_new and e_old == b_new:
+			return acc[:-1] + [((b_old, e_new), t_new)]
+		else:
+			return acc + [new]
+
+	else:
+		return [new]
+
+
 
 # Memory content reads as
 # JP 0x0009
@@ -101,8 +125,13 @@ class RomTestCase(unittest.TestCase):
 		self.assertEqual("code", rom.get_type(3))
 		self.assertEqual("data", rom.get_type(len(memory)))
 
-	def test_rom_can_be_iterated_by_ranges(self):
-		pass
+	def test_same_type_ranges_are_merged_if_contiguous(self):
+		rom = Rom(memory)
+		rom.mark_code(0x0000, 0x0003)
+		rom.mark_code(0x0003, 0x0005)
+
+		self.assertEqual(1, len(rom.ranges))
+		self.assertEqual('code', rom.ranges[0][1])
 
 
 if __name__ == '__main__':
