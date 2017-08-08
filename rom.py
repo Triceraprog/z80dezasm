@@ -1,11 +1,13 @@
 import unittest
 import functools
+import itertools
 
 
 class Rom():
 	def __init__(self, memory):
 		self.memory = memory
 		self.ranges = []
+		self.content = {}
 
 	def get_type(self, address):
 		r = self.__find_range(address)
@@ -20,6 +22,18 @@ class Rom():
 
 	def mark_code(self, begin, end):
 		self.__mark_range(begin, end, 'code')
+
+	def add_content(self, address, content):
+		self.content[address] = content
+
+	def get_content(self, begin, end):
+		addresses = sorted(self.content.keys())
+		addresses = itertools.dropwhile(lambda k: k < begin, addresses)
+		addresses = itertools.takewhile(lambda k: k < end, addresses)
+
+		for address in addresses:
+			yield address, self.get_type(address), self.content[address]
+
 
 	def __mark_range(self, begin, end, range_type):
 		""" begin is inclusive, end is exclusive, to be coherent with range()"""
@@ -132,6 +146,20 @@ class RomTestCase(unittest.TestCase):
 
 		self.assertEqual(1, len(rom.ranges))
 		self.assertEqual('code', rom.ranges[0][1])
+
+	def test_can_add_content_to_an_address(self):
+		content1 = "Some untyped content"
+		content2 = "Some other content"
+		rom = Rom(memory)
+		rom.add_content(0x0004, content1)
+		rom.add_content(0x0002, content2)
+
+		found_contents = []
+		for c in rom.get_content(0, 9):
+			found_contents.append(c)
+
+		self.assertEqual([(0x0002, 'unknown', content2), (0x0004, 'unknown', content1)], found_contents)
+
 
 
 if __name__ == '__main__':

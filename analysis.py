@@ -57,12 +57,34 @@ def mark_all_code_regions(rom, starting_addresses):
             instructions, total_size = find_next_unconditionnal_jump(rom.memory, start)
             rom.mark_code(start, start + total_size)
 
+            for instruction in instructions:
+                address, decoded = instruction
+                rom.add_content(address, decoded)
+
             instructions = adjust_relative_displacements(instructions)
             references = collect_address_references(instructions)
 
             references = [r for r in references if rom.get_type(r) == 'unknown']
 
             starting_addresses.extend(references)
+
+    return rom
+
+
+def mark_all_data_regions(rom):
+    latest_data_begin = 0
+    new_regions = []
+    for r in sorted(rom.ranges):
+        (begin, end), t = r
+        if begin > latest_data_begin:
+            new_region = ((latest_data_begin, begin), 'data')
+            new_regions.append(new_region)
+
+        latest_data_begin = end
+
+    for r in new_regions:
+        (begin, end), t = r
+        rom.mark_data(begin, end)
 
     return rom
 
@@ -125,6 +147,18 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
         self.assertEqual(2, len(rom.ranges))
         self.assertEqual(((0, 3), 'code'), rom.ranges[0])
         self.assertEqual(((9, 12), 'code'), rom.ranges[1])
+
+        rom = mark_all_data_regions(rom)
+        self.assertEqual(3, len(rom.ranges))
+        self.assertEqual(((3, 9), 'data'), rom.ranges[1])
+
+        expected = (0x0000, 'code', ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3))
+        found = None
+
+        for content in rom.get_content(0, 3):
+            found = content
+
+        self.assertEqual(expected, found)
 
 
 if __name__ == '__main__':

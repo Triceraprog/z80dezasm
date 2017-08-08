@@ -1,6 +1,6 @@
 from z80tools import decode_full
 from z80opcode_strings import decoded_to_string, adjust_displacement
-from analysis import mark_all_code_regions
+from analysis import mark_all_code_regions, mark_all_data_regions
 from rom import Rom
 
 
@@ -12,7 +12,6 @@ def decode_code(pc, memory, options):
 
     byte_list = ["%02x" % x for x in memory[pc:pc+decoded_size]]
     byte_string = " ".join(byte_list)
-
 
     string = decoded_to_string(decoded[:-1], options=options)
 
@@ -36,6 +35,9 @@ def decode_data(pc, memory, options):
 
 
 def new_main():
+    hex_prefix = "$"
+    options = {"hex_prefix": hex_prefix}
+
     with open("vg5000_1.1.rom", "rb") as romFile:
         romContent = romFile.read()
 
@@ -47,12 +49,54 @@ def new_main():
 
     rom = Rom(romContent)
     rom = mark_all_code_regions(rom, starting_addresses)
+    rom = mark_all_data_regions(rom)
 
-    for r in sorted(rom.ranges):
-    # for r in rom.ranges:
-        (begin, end), t = r
-        output = "${:0>4x}-${:0>4x}".format(begin, end)
-        print(output)
+    # for r in sorted(rom.ranges):
+    #     (begin, end), t = r
+    #     output = "${:0>4x}-${:0>4x}".format(begin, end)
+    #     print(output)
+
+    for content in rom.get_content(0, len(romContent) + 1):
+        address, region_type, data = content
+
+        if region_type == 'code':
+            decoded_size = data[-1]
+
+            byte_list = ["%02x" % x for x in romContent[address:address+decoded_size]]
+            byte_string = " ".join(byte_list)
+
+            string = decoded_to_string(data[:-1], options=options)
+
+            line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ;".format(
+                hex_prefix=options.get("hex_prefix", "0x"),
+                pc=address,
+                bytes=byte_string,
+                mnemonic=string[0].lower(),
+                args=string[1].lower())
+
+            label = ""
+            labeled_line = "{label:<12} {line}".format(label=label, line=line)
+
+            print(labeled_line)
+
+            if "TODO" in line:
+                exit(1)
+
+            if decoded_size == 0:
+                exit(1)
+
+        else:
+            exit(1)
+            # data = memory[pc]
+            # line = "{mnemonic:<8} {hex_prefix}{data:0>2x}".format(
+            #     mnemonic="defb",
+            #     hex_prefix=options.get("hex_prefix", "0x"),
+            #     data=data
+            #     )
+
+
+
+
 
 
 def main():
