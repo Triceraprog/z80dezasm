@@ -92,9 +92,13 @@ def new_main():
                 line_data = data[:data_per_line]
                 byte_list = [(hex_prefix + "%02x" % x) for x in line_data]
                 byte_string = ",".join(byte_list)
-                line = "{mnemonic:<8} {data:<39} ;".format(
+
+                character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
+                character_string = "".join(character_list)
+                line = "{mnemonic:<8} {data:<39} ; {char_string:10} ; ".format(
                     mnemonic="defb",
-                    data=byte_string
+                    data=byte_string,
+                    char_string=character_string
                     )
                 label = ""
                 labeled_line = "{label:<12} {line}".format(label=label, line=line)

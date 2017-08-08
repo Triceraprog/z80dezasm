@@ -16,3 +16,4 @@
     - "Comment: address/label place (block above or default/right" CR "comment"
     - "Comment: address/label comment on one line"
 - Rename Ranges to Regions
+- Try to detect strings to turn DEFB to DEFM
