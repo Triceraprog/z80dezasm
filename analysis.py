@@ -1,6 +1,6 @@
 import unittest
 
-from z80tools import decode_full, P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ
+from z80tools import decode_full, P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ, P_REGISTER_PAIR, REG_HL, REG_BC, P_IMMEDIATE_8
 from rom import Rom
 
 def is_unconditionnal_jump(fully_decoded):
@@ -68,6 +68,38 @@ def create_labels_with_callers(instructions):
             labels[v2] = (label_name, callers)
 
     return labels
+
+
+def instructions_too_near(couple):
+    pc1, (_, _, _, _, _, size1) = couple[0]
+    pc2, (_, _, _, _, _, _) = couple[1]
+
+    return pc1 + size1 > pc2
+
+def detect_partial_instruction_tricks(instructions, memory):
+    couples = zip(instructions[:-1], instructions[1:])
+    problems = [couple for couple in couples if instructions_too_near(couple)]
+
+    comments = []
+
+    for problem in problems:
+        instruction, following = problem
+
+        index = instructions.index(instruction)
+        instructions.remove(instruction)
+
+        pc1, (_, _, _, _, _, size) = instruction
+        pc2, (_, _, _, _, _, _) = following
+
+        while pc1 < pc2:
+            replacement = (pc1, ("DEFB", None, None, P_IMMEDIATE_8, memory[pc1], 1))
+            instructions.insert(index, replacement)
+            index += 1
+            pc1 += 1
+
+        comments.append(instruction)
+
+    return instructions, comments
 
 
 def mark_all_code_regions(rom, starting_addresses):
@@ -183,6 +215,25 @@ class RomCodeTestCase(unittest.TestCase):
         self.assertEqual(("skip100B", [0x1005]), labels[0x100B])
         self.assertEqual(("call2000", [0x1007]), labels[0x2000])
         self.assertEqual(("rst0038",  [0x100A]), labels[0x0038])
+
+    def test_detect_partial_instruction_tricks(self):
+        memory = [0x00] * 0x285C + [0x00, 0x00, 0x00, 0x28, 0xDB, 0x00]
+        instructions = [(0x285D, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3)),
+                        (0x2860, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x288D, 2)),
+                        (0x2861, ('DEC', None, None, P_REGISTER_PAIR, REG_HL, 1)),
+                        (0x2862, ('DEC', None, None, P_REGISTER_PAIR, REG_BC, 1))]
+
+        expected_comment = instructions[1]
+
+        instructions, comments = detect_partial_instruction_tricks(instructions, memory)
+
+        expected = [(0x285D, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3)),
+                    (0x2860, ('DEFB', None, None, P_IMMEDIATE_8, 0xDB, 1)),
+                    (0x2861, ('DEC', None, None, P_REGISTER_PAIR, REG_HL, 1)),
+                    (0x2862, ('DEC', None, None, P_REGISTER_PAIR, REG_BC, 1))]
+
+        self.assertEqual(expected, instructions)
+        self.assertEqual(expected_comment, comments[0])
 
 
 class RomCodeAnalysisProcessTestCase(unittest.TestCase):
