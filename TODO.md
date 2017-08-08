@@ -19,3 +19,4 @@
   jumpADDR when JP
     Adding the calling addresses in comments
 - Detect jump on partial instructions tricks (0x101a/0x101b)
+- Merge labels and references parsing

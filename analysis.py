@@ -48,6 +48,28 @@ def collect_address_references(instructions):
     return references
 
 
+def create_labels_with_callers(instructions):
+    labels = {}
+    for pc, instruction in instructions:
+        mnemonic, p1, v1, p2, v2, size = instruction
+        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 == P_IMMEDIATE_16:
+            base_name = {"JP": "jump", "JR": "loop", "DJNZ": "loop", "CALL": "call", "RST": "rst"}[mnemonic]
+
+            if base_name == "loop" and v2 > pc:
+                base_name = "skip"
+
+            label_name = base_name + "{:>04X}".format(v2)
+
+            if v2 in labels:
+                callers = labels[v2][1]
+                callers.append(pc)
+            else:
+                callers = [pc]
+            labels[v2] = (label_name, callers)
+
+    return labels
+
+
 def mark_all_code_regions(rom, starting_addresses):
     while len(starting_addresses) > 0:
         start = starting_addresses[0]
@@ -64,6 +86,9 @@ def mark_all_code_regions(rom, starting_addresses):
                 rom.add_content(address, decoded)
 
             references = collect_address_references(instructions)
+            labels = create_labels_with_callers(instructions)
+
+            rom.add_labels(labels)
 
             references = [r for r in references if rom.get_type(r) == 'unknown']
 
@@ -120,8 +145,8 @@ class RomCodeTestCase(unittest.TestCase):
         self.assertEqual(0x1000, new_instructions[1][1][4])
         self.assertEqual(0x100B, new_instructions[2][1][4])
 
-    def test_collect_address_references_from_instrctions(self):
-        instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 9, 3)),
+    def test_collect_address_references_from_instructions(self):
+        instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3)),
                         (0x1003, ('DJNZ', None, None, P_IMMEDIATE_16, 0x1000, 2)),
                         (0x1005, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x100B, 2)),
                         (0x1007, ('CALL', None, None, P_IMMEDIATE_16, 0x2000, 3)),
@@ -135,6 +160,29 @@ class RomCodeTestCase(unittest.TestCase):
         self.assertIn(0x100B, references)
         self.assertIn(0x2000, references)
         self.assertIn(0x0038, references)
+
+    def test_create_labels_with_callers(self):
+        instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3)),
+                        (0x1003, ('DJNZ', None, None, P_IMMEDIATE_16, 0x1000, 2)),
+                        (0x1005, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x100B, 2)),
+                        (0x1007, ('CALL', None, None, P_IMMEDIATE_16, 0x2000, 3)),
+                        (0x100A, ('RST', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x0038, 1)),
+                        (0x100B, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3))]
+
+        labels = create_labels_with_callers(instructions)
+
+        self.assertEqual(5, len(labels))
+        self.assertIn(0x0009, labels)
+        self.assertIn(0x1000, labels)
+        self.assertIn(0x100B, labels)
+        self.assertIn(0x2000, labels)
+        self.assertIn(0x0038, labels)
+
+        self.assertEqual(("jump0009", [0x1000, 0x100B]), labels[0x0009])
+        self.assertEqual(("loop1000", [0x1003]), labels[0x1000])
+        self.assertEqual(("skip100B", [0x1005]), labels[0x100B])
+        self.assertEqual(("call2000", [0x1007]), labels[0x2000])
+        self.assertEqual(("rst0038",  [0x100A]), labels[0x0038])
 
 
 class RomCodeAnalysisProcessTestCase(unittest.TestCase):
@@ -169,6 +217,9 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
             found = content
 
         self.assertEqual(expected, found)
+
+        self.assertEqual(('jump0009', [0x0000]), rom.get_label_at(0x0009))
+        self.assertEqual(('jump0000', [0x0009]), rom.get_label_at(0x0000))
 
 
 if __name__ == '__main__':

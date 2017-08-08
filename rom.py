@@ -8,6 +8,7 @@ class Rom():
 		self.memory = memory
 		self.ranges = []
 		self.content = {}
+		self.labels = {}
 
 	def get_type(self, address):
 		r = self.__find_range(address)
@@ -25,6 +26,18 @@ class Rom():
 
 	def add_content(self, address, content):
 		self.content[address] = content
+
+	def add_labels(self, labels):
+		for key, value in labels.items():
+			if key in self.labels:
+				callers = self.labels[key][1]
+				callers = list(sorted(set(callers + value[1])))
+				self.labels[key][1][1] = callers
+			else:
+				self.labels[key] = value
+
+	def get_label_at(self, address):
+		return self.labels.get(address, None)
 
 	def get_content(self, begin, end):
 		addresses = sorted(self.content.keys())
@@ -160,7 +173,30 @@ class RomTestCase(unittest.TestCase):
 
 		self.assertEqual([(0x0002, 'unknown', content2), (0x0004, 'unknown', content1)], found_contents)
 
+	def test_can_add_labels_to_rom(self):
+		label1 = ('jump0000', [0x0010, 0x0020])
+		label2 = ('call0010', [0x0000])
+		labels = {0x0000: label1,
+				  0x0010: label2}
 
+		rom = Rom(memory)
+		rom.add_labels(labels)
+
+		self.assertIsNone(rom.get_label_at(0x0004))
+		self.assertEqual(label1, rom.get_label_at(0x0000))
+		self.assertEqual(label2, rom.get_label_at(0x0010))
+
+		label3 = ('jump0000', [0x0020, 0x0040])
+		label4 = ('loop0020', [0x0080])
+		labels = {0x0000: label3,
+				  0x0030: label4}
+
+		rom.add_labels(labels)
+
+		self.assertIsNone(rom.get_label_at(0x0024))
+
+		self.assertEqual(label2, rom.get_label_at(0x0010))
+		self.assertEqual(label4, rom.get_label_at(0x0030))
 
 if __name__ == '__main__':
     unittest.main()
