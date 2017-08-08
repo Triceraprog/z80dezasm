@@ -57,11 +57,12 @@ def mark_all_code_regions(rom, starting_addresses):
             instructions, total_size = find_next_unconditionnal_jump(rom.memory, start)
             rom.mark_code(start, start + total_size)
 
+            instructions = adjust_relative_displacements(instructions)
+
             for instruction in instructions:
                 address, decoded = instruction
                 rom.add_content(address, decoded)
 
-            instructions = adjust_relative_displacements(instructions)
             references = collect_address_references(instructions)
 
             references = [r for r in references if rom.get_type(r) == 'unknown']
@@ -85,6 +86,7 @@ def mark_all_data_regions(rom):
     for r in new_regions:
         (begin, end), t = r
         rom.mark_data(begin, end)
+        rom.add_content(begin, rom.memory[begin:end])
 
     return rom
 
@@ -156,6 +158,14 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
         found = None
 
         for content in rom.get_content(0, 3):
+            found = content
+
+        self.assertEqual(expected, found)
+
+        expected = (0x0003, 'data', [0x50, 0x52, 0x49, 0x4E, 0x54, 0x00])
+        found = None
+
+        for content in rom.get_content(3, 9):
             found = content
 
         self.assertEqual(expected, found)

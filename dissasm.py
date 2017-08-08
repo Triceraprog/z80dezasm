@@ -86,17 +86,23 @@ def new_main():
                 exit(1)
 
         else:
-            exit(1)
-            # data = memory[pc]
-            # line = "{mnemonic:<8} {hex_prefix}{data:0>2x}".format(
-            #     mnemonic="defb",
-            #     hex_prefix=options.get("hex_prefix", "0x"),
-            #     data=data
-            #     )
+            hex_prefix = options.get("hex_prefix", "0x")
+            data_per_line = 10
+            while data:
+                line_data = data[:data_per_line]
+                byte_list = [(hex_prefix + "%02x" % x) for x in line_data]
+                byte_string = ",".join(byte_list)
+                line = "{mnemonic:<8} {data:<39} ;".format(
+                    mnemonic="defb",
+                    data=byte_string
+                    )
+                label = ""
+                labeled_line = "{label:<12} {line}".format(label=label, line=line)
 
+                address += 10
+                data = data[data_per_line:]
 
-
-
+                print(labeled_line)
 
 
 def main():
