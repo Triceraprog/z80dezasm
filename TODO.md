@@ -12,11 +12,7 @@
     - "Comment: address/label comment on one line"
 - Rename Ranges to Regions
 - Try to detect strings to turn DEFB to DEFM
-- Automatic labeling
-  loopADDR when JR, -bla
-  skipADDR when JR, +bla
-  callADDR when CALL
-  jumpADDR when JP
-    Adding the calling addresses in comments
 - Detect jump on partial instructions tricks (0x101a/0x101b)
 - Merge labels and references parsing
+- Replace calling addresses with label names
+- Label data reference too

@@ -58,6 +58,14 @@ def new_main():
 
     for content in rom.get_content(0, len(romContent) + 1):
         address, region_type, data = content
+        label = rom.get_label_at(address)
+        if label:
+            label_name, label_references = label
+            label_name += ":"
+            label_references = "called from: " + ",".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
+        else:
+            label_name = ""
+            label_references = ""
 
         if region_type == 'code':
             decoded_size = data[-1]
@@ -67,17 +75,28 @@ def new_main():
 
             string = decoded_to_string(data[:-1], options=options)
 
-            line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ;".format(
+            if label_references:
+                comment = label_references
+            else:
+                comment = ""
+
+            line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
                 hex_prefix=options.get("hex_prefix", "0x"),
                 pc=address,
                 bytes=byte_string,
                 mnemonic=string[0].lower(),
-                args=string[1].lower())
+                args=string[1].lower(),
+                comment=comment[:60])
 
-            label = ""
-            labeled_line = "{label:<12} {line}".format(label=label, line=line)
-
+            labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
             print(labeled_line)
+
+            comment = comment[60:]
+            while len(comment):
+                comment_next_line = (" " * 62) + "; " + comment[:60]
+                print(comment_next_line)
+                comment = comment[60:]
+
 
             if "TODO" in line:
                 exit(1)
@@ -88,6 +107,12 @@ def new_main():
         else:
             hex_prefix = options.get("hex_prefix", "0x")
             data_per_line = 10
+
+            if label_references:
+                comment = label_references
+            else:
+                comment = ""
+
             while data:
                 line_data = data[:data_per_line]
                 byte_list = [(hex_prefix + "%02x" % x) for x in line_data]
@@ -95,13 +120,17 @@ def new_main():
 
                 character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
                 character_string = "".join(character_list)
-                line = "{mnemonic:<8} {data:<39} ; {char_string:10} ; ".format(
+
+                line = "{mnemonic:<8} {data:<39} ; {char_string:10} ; {comment}".format(
                     mnemonic="defb",
                     data=byte_string,
-                    char_string=character_string
+                    char_string=character_string,
+                    comment=comment
                     )
-                label = ""
-                labeled_line = "{label:<12} {line}".format(label=label, line=line)
+                labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
+
+                if comment:
+                    comment = ""
 
                 address += 10
                 data = data[data_per_line:]

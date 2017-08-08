@@ -30,9 +30,9 @@ class Rom():
 	def add_labels(self, labels):
 		for key, value in labels.items():
 			if key in self.labels:
-				callers = self.labels[key][1]
+				name, callers = self.labels[key]
 				callers = list(sorted(set(callers + value[1])))
-				self.labels[key][1][1] = callers
+				self.labels[key] = name, callers
 			else:
 				self.labels[key] = value
 
