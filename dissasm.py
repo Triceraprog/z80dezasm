@@ -23,8 +23,9 @@ def new_main():
 
     # for r in sorted(rom.ranges):
     #     (begin, end), t = r
-    #     output = "${:0>4x}-${:0>4x}".format(begin, end)
+    #     output = "${:0>4x}-${:0>4x} {}".format(begin, end, t)
     #     print(output)
+    # exit()
 
     for content in rom.get_content(0, len(romContent) + 1):
         address, region_type, data = content

@@ -18,9 +18,10 @@ def find_next_unconditionnal_jump(memory, start):
     while pc < last_address:
         fully_decoded = decode_full(memory[pc:])
         decoded_instructions.append((pc, fully_decoded))
-        pc += fully_decoded[-1]
+        size = fully_decoded[-1]
+        pc += size
 
-        if is_unconditionnal_jump(fully_decoded):
+        if is_unconditionnal_jump(fully_decoded) or size == 0:
             break
             
     return decoded_instructions, (pc - start)
@@ -166,6 +167,15 @@ class RomCodeTestCase(unittest.TestCase):
         size_of_last_instruction = last_instruction[-1]
         self.assertEqual(3, size_of_last_instruction)
 
+    def test_find_unconditional_jump_stops_on_error(self):
+        memory = [0xC3]
+
+        start = 0x0000
+        instructions, total_size = find_next_unconditionnal_jump(memory, start)
+        self.assertEqual(1, len(instructions))
+        self.assertEqual(0, total_size)
+
+
     def test_adjust_relative_displacements_for_jr_and_djnz(self):
         instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 9, 3)),
                         (0x1003, ('DJNZ', None, None, P_DISPLACEMENT, -5, 2)),
@@ -272,6 +282,16 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
         self.assertEqual(('jump0009', [0x0000]), rom.get_label_at(0x0009))
         self.assertEqual(('jump0000', [0x0009]), rom.get_label_at(0x0000))
 
+    def test_trick_detection_witout_label(self):
+        memory = [0x00] * 0x010 + [0x28, 0x2B]
+        rom = Rom(memory)
+        starting_addresses = [0x11, 0x10]
+
+        rom = mark_all_code_regions(rom, starting_addresses)
+        rom = mark_all_data_regions(rom)
+
+        for content in rom.get_content(0, len(memory) + 1):
+            print(content)
 
 if __name__ == '__main__':
     unittest.main()
