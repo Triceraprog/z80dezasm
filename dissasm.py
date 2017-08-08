@@ -31,6 +31,8 @@ def new_main():
     for content in rom.get_content(0, len(romContent) + 1):
         address, region_type, data = content
         label = rom.get_label_at(address)
+        comments = rom.get_comments_at(address)
+
         if label:
             label_name, label_references = label
             label_name += ":"
@@ -52,6 +54,11 @@ def new_main():
             else:
                 comment = ""
 
+            online_comment = [comment for comment in comments if comment[0] == "online"]
+
+            if online_comment:
+                comment += online_comment[0][1]
+
             line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
                 hex_prefix=options.get("hex_prefix", "0x"),
                 pc=address,
@@ -68,6 +75,21 @@ def new_main():
                 comment_next_line = (" " * 62) + "; " + comment[:60]
                 print(comment_next_line)
                 comment = comment[60:]
+
+            for comment in comments:
+                tag, content = comment
+                if tag == 'partial-instruction':
+                    byte_list = ["%02x" % x for x in romContent[address:address+content[-1]]]
+                    byte_string = " ".join(byte_list)
+                    partial_string = decoded_to_string(content[:-1], options=options)
+                    line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
+                        hex_prefix=options.get("hex_prefix", "0x"),
+                        pc=address,
+                        bytes=byte_string,
+                        mnemonic=partial_string[0].lower(),
+                        args=partial_string[1].lower())
+                    labeled_line = "; {label:<10} {line}".format(label="", line=line)
+                    print(labeled_line)
 
 
             if "TODO" in line:

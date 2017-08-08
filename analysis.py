@@ -161,6 +161,11 @@ def detect_partial_instructions(rom):
         pc, instruction = instruction
         rom.add_content(pc, instruction)
 
+    for comment in comments:
+        address, comment = comment
+        rom.add_comment(address, 'online', 'partial instruction trick')
+        rom.add_comment(address, 'partial-instruction', comment)
+
     return rom
 
 
@@ -316,6 +321,7 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
             rom_content.append(content)
 
         self.assertEqual([expected1, expected2], rom_content)
+        self.assertIsNotNone(rom.get_comments_at(0x0010))
 
 if __name__ == '__main__':
     unittest.main()

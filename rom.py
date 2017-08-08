@@ -9,6 +9,7 @@ class Rom():
 		self.ranges = []
 		self.content = {}
 		self.labels = {}
+		self.comments = {}
 
 	def get_type(self, address):
 		r = self.__find_range(address)
@@ -27,6 +28,14 @@ class Rom():
 	def add_content(self, address, content):
 		self.content[address] = content
 
+	def get_content(self, begin, end):
+		addresses = sorted(self.content.keys())
+		addresses = itertools.dropwhile(lambda k: k < begin, addresses)
+		addresses = itertools.takewhile(lambda k: k < end, addresses)
+
+		for address in addresses:
+			yield address, self.get_type(address), self.content[address]
+
 	def add_labels(self, labels):
 		for key, value in labels.items():
 			if key in self.labels:
@@ -39,14 +48,13 @@ class Rom():
 	def get_label_at(self, address):
 		return self.labels.get(address, None)
 
-	def get_content(self, begin, end):
-		addresses = sorted(self.content.keys())
-		addresses = itertools.dropwhile(lambda k: k < begin, addresses)
-		addresses = itertools.takewhile(lambda k: k < end, addresses)
+	def add_comment(self, address, tag, comment):
+		comments = self.comments.get(address, set())
+		comments.update([(tag, comment)])
+		self.comments[address] = comments
 
-		for address in addresses:
-			yield address, self.get_type(address), self.content[address]
-
+	def get_comments_at(self, address):
+		return self.comments.get(address, set())
 
 	def __mark_range(self, begin, end, range_type):
 		""" begin is inclusive, end is exclusive, to be coherent with range()"""
@@ -109,51 +117,51 @@ def merge_neighbours(acc, new):
 
 
 
-# Memory content reads as
-# JP 0x0009
-# DEFM "PRINT", 0
-# JP 0x0000
-
-memory = [0xC3, 0x09, 0x00, 0x50, 0x52, 0x49, 0x4E, 0x54, 0x00, 0xC3, 0x00, 0x00]
-
 class RomTestCase(unittest.TestCase):
+	# Memory content reads as
+	# JP 0x0009
+	# DEFM "PRINT", 0
+	# JP 0x0000
+
+	memory = [0xC3, 0x09, 0x00, 0x50, 0x52, 0x49, 0x4E, 0x54, 0x00, 0xC3, 0x00, 0x00]
+
 	def test_rom_is_initialized_with_memory_content(self):
-		rom = Rom(memory)
+		rom = Rom(RomTestCase.memory)
 		self.assertEqual("unknown", rom.get_type(0x0004))
 
 	def test_rom_can_be_marked_with_data_range(self):
-		rom = Rom(memory)
+		rom = Rom(RomTestCase.memory)
 		rom.mark_data(0x0003, 0x0009)
 		self.assertEqual("data", rom.get_type(0x0004))
 		self.assertEqual("unknown", rom.get_type(0x0000))
 
 	def test_rom_can_be_marked_with_code_range(self):
-		rom = Rom(memory)
-		rom.mark_code(0x0001, len(memory) + 1)
+		rom = Rom(RomTestCase.memory)
+		rom.mark_code(0x0001, len(RomTestCase.memory) + 1)
 		self.assertEqual("code", rom.get_type(0x0004))
 		self.assertEqual("unknown", rom.get_type(0x0000))
 
 	def test_rom_can_be_marked_with_code_then_a_sub_data_range(self):
-		rom = Rom(memory)
-		rom.mark_code(0x0000, len(memory) + 1)
+		rom = Rom(RomTestCase.memory)
+		rom.mark_code(0x0000, len(RomTestCase.memory) + 1)
 		rom.mark_data(0x0003, 0x0009)
 		self.assertEqual("code", rom.get_type(0x0000))
 		self.assertEqual("data", rom.get_type(0x0004))
 
-		rom = Rom(memory)
-		rom.mark_code(0x0000, len(memory) + 1)
+		rom = Rom(RomTestCase.memory)
+		rom.mark_code(0x0000, len(RomTestCase.memory) + 1)
 		rom.mark_data(0x0000, 0x0009)
 		self.assertEqual("code", rom.get_type(0x000A))
 		self.assertEqual("data", rom.get_type(0x0000))
 
-		rom = Rom(memory)
-		rom.mark_code(0x0000, len(memory) + 1)
-		rom.mark_data(0x0004, len(memory) + 1)
+		rom = Rom(RomTestCase.memory)
+		rom.mark_code(0x0000, len(RomTestCase.memory) + 1)
+		rom.mark_data(0x0004, len(RomTestCase.memory) + 1)
 		self.assertEqual("code", rom.get_type(3))
-		self.assertEqual("data", rom.get_type(len(memory)))
+		self.assertEqual("data", rom.get_type(len(RomTestCase.memory)))
 
 	def test_same_type_ranges_are_merged_if_contiguous(self):
-		rom = Rom(memory)
+		rom = Rom(RomTestCase.memory)
 		rom.mark_code(0x0000, 0x0003)
 		rom.mark_code(0x0003, 0x0005)
 
@@ -163,7 +171,7 @@ class RomTestCase(unittest.TestCase):
 	def test_can_add_content_to_an_address(self):
 		content1 = "Some untyped content"
 		content2 = "Some other content"
-		rom = Rom(memory)
+		rom = Rom(RomTestCase.memory)
 		rom.add_content(0x0004, content1)
 		rom.add_content(0x0002, content2)
 
@@ -179,7 +187,7 @@ class RomTestCase(unittest.TestCase):
 		labels = {0x0000: label1,
 				  0x0010: label2}
 
-		rom = Rom(memory)
+		rom = Rom(RomTestCase.memory)
 		rom.add_labels(labels)
 
 		self.assertIsNone(rom.get_label_at(0x0004))
@@ -197,6 +205,25 @@ class RomTestCase(unittest.TestCase):
 
 		self.assertEqual(label2, rom.get_label_at(0x0010))
 		self.assertEqual(label4, rom.get_label_at(0x0030))
+
+	def test_can_add_comments_to_rom(self):
+		comment1 = "This is a comment after an address"
+		comment2 = "This is a comment before an address"
+		comment3 = "This is a comment online"
+
+		rom = Rom(RomTestCase.memory)
+		rom.add_comment(0x0000, 'after', comment1)
+		rom.add_comment(0x0000, 'before', comment2)
+		rom.add_comment(0x0001, 'online', comment3)
+
+		self.assertEqual(set(), rom.get_comments_at(0x0003))
+
+		result1 = rom.get_comments_at(0x0000)
+		self.assertEqual(set([('after', comment1), ('before', comment2)]), result1)
+
+		result2 = rom.get_comments_at(0x0001)
+		self.assertEqual(set([('online', comment3)]), result2)
+
 
 if __name__ == '__main__':
     unittest.main()
