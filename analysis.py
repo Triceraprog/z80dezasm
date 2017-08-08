@@ -149,6 +149,21 @@ def mark_all_data_regions(rom):
     return rom
 
 
+def detect_partial_instructions(rom):
+    instructions = []
+    for content in rom.get_content(0, len(rom.memory) + 1):
+        if content[1] == 'code':
+            instructions.append((content[0], content[2]))
+
+    instructions, comments = detect_partial_instruction_tricks(instructions, rom.memory)
+
+    for instruction in instructions:
+        pc, instruction = instruction
+        rom.add_content(pc, instruction)
+
+    return rom
+
+
 class RomCodeTestCase(unittest.TestCase):
     def test_from_a_start_point_go_to_next_unconditional_jump(self):
         # Memory content reads as
@@ -283,15 +298,24 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
         self.assertEqual(('jump0000', [0x0009]), rom.get_label_at(0x0000))
 
     def test_trick_detection_witout_label(self):
+        # One trick can be detected when the second partial instruction
+        # is decoded before the first
         memory = [0x00] * 0x010 + [0x28, 0x2B]
         rom = Rom(memory)
         starting_addresses = [0x11, 0x10]
 
         rom = mark_all_code_regions(rom, starting_addresses)
         rom = mark_all_data_regions(rom)
+        rom = detect_partial_instructions(rom)
 
-        for content in rom.get_content(0, len(memory) + 1):
-            print(content)
+        expected1 = (0x0010, 'code', ('DEFB', None, None, P_IMMEDIATE_8, 0x28, 1))
+        expected2 = (0x0011, 'code', ('DEC', P_REGISTER_PAIR, REG_HL, None, None, 1))
+
+        rom_content = []
+        for content in rom.get_content(0x10, 0x12):
+            rom_content.append(content)
+
+        self.assertEqual([expected1, expected2], rom_content)
 
 if __name__ == '__main__':
     unittest.main()
