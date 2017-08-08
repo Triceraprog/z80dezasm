@@ -1,14 +1,9 @@
 - The masks for opcode decoding can be optimized by complete masking and hashing
 - Is separation between REGISTERs and REGISTER_PAIRs necessary?
-- Comment JR displacements with absolute address
-- Mark the data, code and unkown parts
 - Comments and labels at specific adresses
 - Labels with code or data
-- Follow the code jumps
 - Decoding
-  - Every memorized address is added as a label (warning, it can happen that a label is "inside" a full opcode, because of nasty assembly tricks 0x101a/0x101b on VG5000) if not already known
-  - Associate decoded instructions to the ranges to avoid recomputing
-  - Mark the rest as data
+  - Every memorized address is added as a label
 - Labels
   - Labels are loaded with "address", "name"
 - Comments
@@ -17,3 +12,10 @@
     - "Comment: address/label comment on one line"
 - Rename Ranges to Regions
 - Try to detect strings to turn DEFB to DEFM
+- Automatic labeling
+  loopADDR when JR, -bla
+  skipADDR when JR, +bla
+  callADDR when CALL
+  jumpADDR when JP
+    Adding the calling addresses in comments
+- Detect jump on partial instructions tricks (0x101a/0x101b)
