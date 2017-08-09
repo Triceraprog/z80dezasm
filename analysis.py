@@ -77,6 +77,7 @@ def instructions_too_near(couple):
 
     return pc1 + size1 > pc2
 
+
 def detect_partial_instruction_tricks(instructions, memory):
     couples = zip(instructions[:-1], instructions[1:])
     problems = [couple for couple in couples if instructions_too_near(couple)]
@@ -91,6 +92,8 @@ def detect_partial_instruction_tricks(instructions, memory):
 
         pc1, (_, _, _, _, _, size) = instruction
         pc2, (_, _, _, _, _, _) = following
+
+        end_address = pc1 + size
 
         while pc1 < pc2:
             replacement = (pc1, ("DEFB", None, None, P_IMMEDIATE_8, memory[pc1], 1))
@@ -145,6 +148,38 @@ def mark_all_data_regions(rom):
         (begin, end), t = r
         rom.mark_data(begin, end)
         rom.add_content(begin, rom.memory[begin:end])
+
+    return rom
+
+
+def inject_instructions_on_missing_labels(rom):
+    for label in rom.get_labels():
+        address, label = label
+        address, region_type, content = rom.get_content_at(address)
+        if not content and address < len(rom.memory):
+            fully_decoded = decode_full(rom.memory[address:])
+            rom.add_content(address, fully_decoded)
+
+            # As this can result in an instruction size less than the span
+            # of memory the previous instruction covers, let's decode a bit
+            # further
+            size = fully_decoded[-1]
+            address += size
+
+            # Maximum instruction size is 5, we will already have one
+            # on the instruction before
+            left_to_decode = 4 - size
+
+            while left_to_decode > 0:
+                fully_decoded = decode_full(rom.memory[address:])
+                rom.add_content(address, fully_decoded)
+
+                size = fully_decoded[-1]
+                if size == 0:
+                    break
+
+                address += size
+                left_to_decode -= size
 
     return rom
 
@@ -302,7 +337,7 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
         self.assertEqual(('jump0009', [0x0000]), rom.get_label_at(0x0009))
         self.assertEqual(('jump0000', [0x0009]), rom.get_label_at(0x0000))
 
-    def test_trick_detection_witout_label(self):
+    def test_trick_detection_without_label(self):
         # One trick can be detected when the second partial instruction
         # is decoded before the first
         memory = [0x00] * 0x010 + [0x28, 0x2B]
@@ -311,6 +346,7 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
 
         rom = mark_all_code_regions(rom, starting_addresses)
         rom = mark_all_data_regions(rom)
+        rom = inject_instructions_on_missing_labels(rom)
         rom = detect_partial_instructions(rom)
 
         expected1 = (0x0010, 'code', ('DEFB', None, None, P_IMMEDIATE_8, 0x28, 1))
@@ -322,6 +358,43 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
 
         self.assertEqual([expected1, expected2], rom_content)
         self.assertIsNotNone(rom.get_comments_at(0x0010))
+
+    def test_trick_detection_with_label(self):
+        # The second trick can be detected when a label points to an adress
+        # which was not decoded but which is in a code region
+        memory = [0xC3, 0x14, 0x00] + [0x00] * 0x10 + [0x28, 0x2B]
+        rom = Rom(memory)
+        starting_addresses = [0x03, 0x00]
+
+        rom = mark_all_code_regions(rom, starting_addresses)
+        rom = mark_all_data_regions(rom)
+        rom = inject_instructions_on_missing_labels(rom)
+        rom = detect_partial_instructions(rom)
+
+        expected1 = (0x0013, 'code', ('DEFB', None, None, P_IMMEDIATE_8, 0x28, 1))
+        expected2 = (0x0014, 'code', ('DEC', P_REGISTER_PAIR, REG_HL, None, None, 1))
+
+        self.assertEqual(expected1, rom.get_content_at(0x0013))
+        self.assertEqual(expected2, rom.get_content_at(0x0014))
+
+    def test_trick_detection_with_label_and_three_byte_instrction(self):
+        memory = [0xC3, 0x14, 0x00] + [0x00] * 0x10 + [0xD2, 0xC1, 0xE1]
+        rom = Rom(memory)
+        starting_addresses = [0x03, 0x00]
+
+        rom = mark_all_code_regions(rom, starting_addresses)
+        rom = mark_all_data_regions(rom)
+        rom = inject_instructions_on_missing_labels(rom)
+        rom = detect_partial_instructions(rom)
+
+        expected1 = (0x0013, 'code', ('DEFB', None, None, P_IMMEDIATE_8, 0xD2, 1))
+        expected2 = (0x0014, 'code', ('POP', P_REGISTER_PAIR, REG_BC, None, None, 1))
+        expected3 = (0x0015, 'code', ('POP', P_REGISTER_PAIR, REG_HL, None, None, 1))
+
+        self.assertEqual(expected1, rom.get_content_at(0x0013))
+        self.assertEqual(expected2, rom.get_content_at(0x0014))
+        self.assertEqual(expected3, rom.get_content_at(0x0015))
+
 
 if __name__ == '__main__':
     unittest.main()

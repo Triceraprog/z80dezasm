@@ -1,6 +1,6 @@
 from z80tools import decode_full
 from z80opcode_strings import decoded_to_string, adjust_displacement
-from analysis import mark_all_code_regions, mark_all_data_regions, detect_partial_instructions
+from analysis import mark_all_code_regions, mark_all_data_regions, detect_partial_instructions, inject_instructions_on_missing_labels
 from rom import Rom
 
 
@@ -20,6 +20,7 @@ def new_main():
     rom = Rom(romContent)
     rom = mark_all_code_regions(rom, starting_addresses)
     rom = mark_all_data_regions(rom)
+    rom = inject_instructions_on_missing_labels(rom)
     rom = detect_partial_instructions(rom)
 
     # for r in sorted(rom.ranges):

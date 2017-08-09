@@ -36,6 +36,9 @@ class Rom():
 		for address in addresses:
 			yield address, self.get_type(address), self.content[address]
 
+	def get_content_at(self, address):
+		return address, self.get_type(address), self.content.get(address, None)
+
 	def add_labels(self, labels):
 		for key, value in labels.items():
 			if key in self.labels:
@@ -47,6 +50,10 @@ class Rom():
 
 	def get_label_at(self, address):
 		return self.labels.get(address, None)
+
+	def get_labels(self):
+		for address in sorted(self.labels.keys()):
+			yield address, self.labels[address]
 
 	def add_comment(self, address, tag, comment):
 		comments = self.comments.get(address, set())
@@ -180,6 +187,7 @@ class RomTestCase(unittest.TestCase):
 			found_contents.append(c)
 
 		self.assertEqual([(0x0002, 'unknown', content2), (0x0004, 'unknown', content1)], found_contents)
+		self.assertEqual((0x0002, 'unknown', content2), rom.get_content_at(0x0002))
 
 	def test_can_add_labels_to_rom(self):
 		label1 = ('jump0000', [0x0010, 0x0020])
@@ -205,6 +213,10 @@ class RomTestCase(unittest.TestCase):
 
 		self.assertEqual(label2, rom.get_label_at(0x0010))
 		self.assertEqual(label4, rom.get_label_at(0x0030))
+
+		all_labels = [l for l in rom.get_labels()]
+		self.assertEqual(3, len(all_labels))
+		self.assertEqual(all_labels[0], (0x0000, ('jump0000', [16, 32, 64])) )
 
 	def test_can_add_comments_to_rom(self):
 		comment1 = "This is a comment after an address"
