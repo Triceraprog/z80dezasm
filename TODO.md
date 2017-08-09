@@ -15,7 +15,4 @@
 - Merge labels and references parsing
 - Replace calling addresses with label names
 - Label data reference too
-- Detect jump on partial instructions tricks (0x101a/0x101b)
-  - Two cases
-    - First is when a label has no decoded instruction
-    - Second is when a decoded instruction is following another one without the right number of bytes (done)
+- Clean the dissasm mess
