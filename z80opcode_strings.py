@@ -180,30 +180,5 @@ class FromDecodedToStringTestCase(unittest.TestCase):
         self.assertEqual(expected,  output)
 
 
-def adjust_displacement(fully_decoded, reference_pc):
-    mnemonic, p1, v1, p2, v2, size = fully_decoded
-
-    if mnemonic in ("JR", "DJNZ") and p2 == P_DISPLACEMENT:
-        fully_decoded = mnemonic, p1, v1, P_IMMEDIATE_16, reference_pc + v2 + size, size
-
-    return fully_decoded
-
-
-class RelativeJumpAddressAdjustTestCase(unittest.TestCase):
-    def test_displacement_adjustement_for_jr(self):
-        full_decoded = ('JR', P_CONDITION, COND_NZ, P_DISPLACEMENT, -14, 2)
-        output = adjust_displacement(full_decoded, 0x0010)
-
-        expected = ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x0004, 2)
-        self.assertEqual(expected,  output)
-
-    def test_displacement_adjustement_for_djnz(self):
-        full_decoded = ('DJNZ', None, None, P_DISPLACEMENT, -14, 2)
-        output = adjust_displacement(full_decoded, 0x0010)
-
-        expected = ('DJNZ', None, None, P_IMMEDIATE_16, 0x0004, 2)
-        self.assertEqual(expected,  output)
-
-
 if __name__ == '__main__':
     unittest.main()

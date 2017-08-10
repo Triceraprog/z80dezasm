@@ -1,5 +1,5 @@
 from z80tools import decode_full
-from z80opcode_strings import decoded_to_string, adjust_displacement
+from z80opcode_strings import decoded_to_string
 from analysis import mark_all_code_regions, mark_all_data_regions, detect_partial_instructions, inject_instructions_on_missing_labels
 from rom import Rom
 import itertools
