@@ -1,5 +1,5 @@
 from z80tools import decode_full
-from z80opcode_strings import decoded_to_string
+from z80opcode_strings import decoded_to_string, inject_label_on_call
 from analysis import mark_all_code_regions, mark_all_data_regions, detect_partial_instructions, inject_instructions_on_missing_labels
 from rom import Rom
 import itertools
@@ -15,6 +15,7 @@ def get_label_and_x_ref(label, hex_prefix):
     if label:
         label_name, label_references = label
         label_name += ":"
+        label_name = label_name.lower()
         label_references = "called from: " + ",".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
     else:
         label_name = ""
@@ -57,7 +58,8 @@ def print_code(rom, address, data, options):
     decoded_size = data[-1]
 
     byte_string = memory_to_byte_list(rom.memory[address:address+decoded_size])
-    string = decoded_to_string(data[:-1], options=options)
+    decoded = inject_label_on_call(rom.labels, data[:-1])
+    string = decoded_to_string(decoded, options=options)
     comment = create_online_comment(comments, label_references)
 
     line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
@@ -117,6 +119,13 @@ def print_data(rom, address, data, options):
         data = data[data_per_line:]
 
 
+def dump_undefined_labels(rom):
+    memory_size = len(rom.memory)
+    for label in rom.get_labels():
+        address, (name, refs) = label
+        if address > memory_size or not rom.get_content_at(address):
+            print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
+
 def main():
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
@@ -149,6 +158,8 @@ def main():
             print_code(rom, address, data, options)
         else:
             print_data(rom, address, data, options)
+
+    dump_undefined_labels(rom)
 
 
 if __name__ == '__main__':

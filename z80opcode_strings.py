@@ -24,7 +24,10 @@ def get_param_str(param, value, options):
             return value[2:]
 
     if param == P_IMMEDIATE_16:
-        return hex_prefix + "%04X" % value
+        if isinstance(value, int):
+            return hex_prefix + "%04X" % value
+        else:
+            return value
 
     if param == P_IMMEDIATE_16_INDIRECT:
         return "(" + hex_prefix + "%04X)" % value
@@ -84,6 +87,13 @@ class FromDecodedToStringTestCase(unittest.TestCase):
     def test_immediate_16(self):
         decoded = ('JP', None, None, P_IMMEDIATE_16, 4096)
         expected = ('JP', '0x1000')
+
+        output = decoded_to_string(decoded)
+        self.assertEqual(expected,  output)
+
+    def test_immediate_16_with_label(self):
+        decoded = ('JP', None, None, P_IMMEDIATE_16, 'jump1000')
+        expected = ('JP', 'jump1000')
 
         output = decoded_to_string(decoded)
         self.assertEqual(expected,  output)
@@ -178,6 +188,55 @@ class FromDecodedToStringTestCase(unittest.TestCase):
 
         output = decoded_to_string(decoded)
         self.assertEqual(expected,  output)
+
+
+def inject_label_on_call(labels, decoded):
+    mnemonic, p1, v1, p2, v2 = decoded
+    if mnemonic in ('JP', 'JR', 'CALL', 'RST') and p2 == P_IMMEDIATE_16:
+        new_v2 = labels.get(v2, (v2, []))
+        new_v2, _ = new_v2
+        return (mnemonic, p1, v1, p2, new_v2)
+
+    return decoded
+
+
+class DecodingJumpsWithLabelsTestCase(unittest.TestCase):
+    def test_address_found_in_label_is_modified_to_label_name(self):
+        labels = {0x2238: ('jump2238', [10]), }
+
+        decoded = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2238)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 'jump2238')
+        self.assertEqual(expected, decoded)
+
+        decoded = ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2238)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 'jump2238')
+        self.assertEqual(expected, decoded)
+
+        decoded = ('CALL', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2238)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('CALL', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 'jump2238')
+        self.assertEqual(expected, decoded)
+
+        decoded = ('RST', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2238)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('RST', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 'jump2238')
+        self.assertEqual(expected, decoded)
+
+
+    def test_address_not_found_in_label_is_not_modified(self):
+        labels = {0x2238: ('jump2238', [10]), }
+
+        decoded = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2240)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2240)
+        self.assertEqual(expected, decoded)
 
 
 if __name__ == '__main__':

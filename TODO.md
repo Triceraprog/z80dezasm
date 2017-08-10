@@ -15,4 +15,3 @@
   - Comments are loaded with either
     - "Comment: address/label place (block above or default/right" CR "comment"
     - "Comment: address/label comment on one line"
-- Replace calling addresses with label names
