@@ -5,6 +5,12 @@ from rom import Rom
 import itertools
 
 
+def memory_to_byte_list(memory, hex_prefix="", separator=" "):
+    byte_list = [(hex_prefix+"%02x") % x for x in memory]
+    byte_string = separator.join(byte_list)
+    return byte_string
+
+
 def new_main():
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
@@ -46,8 +52,7 @@ def new_main():
         if region_type == 'code':
             decoded_size = data[-1]
 
-            byte_list = ["%02x" % x for x in romContent[address:address+decoded_size]]
-            byte_string = " ".join(byte_list)
+            byte_string = memory_to_byte_list(romContent[address:address+decoded_size])
 
             string = decoded_to_string(data[:-1], options=options)
 
@@ -81,8 +86,7 @@ def new_main():
             for comment in comments:
                 tag, content = comment
                 if tag == 'partial-instruction':
-                    byte_list = ["%02x" % x for x in romContent[address:address+content[-1]]]
-                    byte_string = " ".join(byte_list)
+                    byte_string = memory_to_byte_list(romContent[address:address+content[-1]])
                     partial_string = decoded_to_string(content[:-1], options=options)
                     line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
                         hex_prefix=options.get("hex_prefix", "0x"),
@@ -111,8 +115,7 @@ def new_main():
 
             while data:
                 line_data = data[:data_per_line]
-                byte_list = [(hex_prefix + "%02x" % x) for x in line_data]
-                byte_string = ",".join(byte_list)
+                byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
 
                 character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
                 character_string = "".join(character_list)
