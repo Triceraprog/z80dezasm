@@ -1,18 +1,18 @@
 - The masks for opcode decoding can be optimized by complete masking and hashing
 - Is separation between REGISTERs and REGISTER_PAIRs necessary?
-- Comments and labels at specific adresses
-- Labels with code or data
 - Decoding
   - Every memorized address is added as a label
+  - Unused labels are logged at the end (those which are not named and not pointing to the ROM)
+- Rename Ranges to Regions
+- Merge labels and references parsing
+- Try to detect strings to turn DEFB to DEFM
+- Label data reference too
+- Labels with code or data
+- Comments and labels at specific adresses
 - Labels
   - Labels are loaded with "address", "name"
 - Comments
   - Comments are loaded with either
     - "Comment: address/label place (block above or default/right" CR "comment"
     - "Comment: address/label comment on one line"
-- Rename Ranges to Regions
-- Try to detect strings to turn DEFB to DEFM
-- Merge labels and references parsing
 - Replace calling addresses with label names
-- Label data reference too
-- Clean the dissasm mess
