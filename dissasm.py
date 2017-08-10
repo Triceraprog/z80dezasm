@@ -11,7 +11,79 @@ def memory_to_byte_list(memory, hex_prefix="", separator=" "):
     return byte_string
 
 
-def new_main():
+def get_label_and_x_ref(label, hex_prefix):
+    if label:
+        label_name, label_references = label
+        label_name += ":"
+        label_references = "called from: " + ",".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
+    else:
+        label_name = ""
+        label_references = ""
+
+    return label_name, label_references
+
+
+def print_code(rom, address, data, options):
+    hex_prefix=options.get("hex_prefix", "0x")
+    label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
+    comments = rom.get_comments_at(address)
+
+    decoded_size = data[-1]
+
+    byte_string = memory_to_byte_list(rom.memory[address:address+decoded_size])
+
+    string = decoded_to_string(data[:-1], options=options)
+
+    if label_references:
+        comment = label_references
+    else:
+        comment = ""
+
+    online_comment = [comment for comment in comments if comment[0] == "online"]
+
+    if online_comment:
+        comment += online_comment[0][1]
+
+    line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
+        hex_prefix=options.get("hex_prefix", "0x"),
+        pc=address,
+        bytes=byte_string,
+        mnemonic=string[0].lower(),
+        args=string[1].lower(),
+        comment=comment[:60])
+
+    labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
+    print(labeled_line)
+
+    comment = comment[60:]
+    while len(comment):
+        comment_next_line = (" " * 62) + "; " + comment[:60]
+        print(comment_next_line)
+        comment = comment[60:]
+
+    for comment in comments:
+        tag, content = comment
+        if tag == 'partial-instruction':
+            byte_string = memory_to_byte_list(rom.memory[address:address+content[-1]])
+            partial_string = decoded_to_string(content[:-1], options=options)
+            line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
+                hex_prefix=options.get("hex_prefix", "0x"),
+                pc=address,
+                bytes=byte_string,
+                mnemonic=partial_string[0].lower(),
+                args=partial_string[1].lower())
+            labeled_line = "; {label:<10} {line}".format(label="", line=line)
+            print(labeled_line)
+
+
+    if "TODO" in line:
+        exit(1)
+
+    if decoded_size == 0:
+        exit(1)
+
+
+def main():
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
 
@@ -38,74 +110,13 @@ def new_main():
 
     for content in rom.get_content(0, len(romContent) + 1):
         address, region_type, data = content
-        label = rom.get_label_at(address)
         comments = rom.get_comments_at(address)
 
-        if label:
-            label_name, label_references = label
-            label_name += ":"
-            label_references = "called from: " + ",".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
-        else:
-            label_name = ""
-            label_references = ""
+        label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
 
         if region_type == 'code':
-            decoded_size = data[-1]
-
-            byte_string = memory_to_byte_list(romContent[address:address+decoded_size])
-
-            string = decoded_to_string(data[:-1], options=options)
-
-            if label_references:
-                comment = label_references
-            else:
-                comment = ""
-
-            online_comment = [comment for comment in comments if comment[0] == "online"]
-
-            if online_comment:
-                comment += online_comment[0][1]
-
-            line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
-                hex_prefix=options.get("hex_prefix", "0x"),
-                pc=address,
-                bytes=byte_string,
-                mnemonic=string[0].lower(),
-                args=string[1].lower(),
-                comment=comment[:60])
-
-            labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
-            print(labeled_line)
-
-            comment = comment[60:]
-            while len(comment):
-                comment_next_line = (" " * 62) + "; " + comment[:60]
-                print(comment_next_line)
-                comment = comment[60:]
-
-            for comment in comments:
-                tag, content = comment
-                if tag == 'partial-instruction':
-                    byte_string = memory_to_byte_list(romContent[address:address+content[-1]])
-                    partial_string = decoded_to_string(content[:-1], options=options)
-                    line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
-                        hex_prefix=options.get("hex_prefix", "0x"),
-                        pc=address,
-                        bytes=byte_string,
-                        mnemonic=partial_string[0].lower(),
-                        args=partial_string[1].lower())
-                    labeled_line = "; {label:<10} {line}".format(label="", line=line)
-                    print(labeled_line)
-
-
-            if "TODO" in line:
-                exit(1)
-
-            if decoded_size == 0:
-                exit(1)
-
+            print_code(rom, address, data, options)
         else:
-            hex_prefix = options.get("hex_prefix", "0x")
             data_per_line = 10
 
             if label_references:
@@ -138,4 +149,4 @@ def new_main():
 
 
 if __name__ == '__main__':
-    new_main()
+    main()
