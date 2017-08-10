@@ -83,6 +83,42 @@ def print_code(rom, address, data, options):
         exit(1)
 
 
+def print_data(rom, address, data, options):
+    hex_prefix=options.get("hex_prefix", "0x")
+    label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
+    comments = rom.get_comments_at(address)
+
+    data_per_line = 10
+
+    if label_references:
+        comment = label_references
+    else:
+        comment = ""
+
+    while data:
+        line_data = data[:data_per_line]
+        byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
+
+        character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
+        character_string = "".join(character_list)
+
+        line = "{mnemonic:<8} {data:<39} ; {char_string:10} ; {comment}".format(
+            mnemonic="defb",
+            data=byte_string,
+            char_string=character_string,
+            comment=comment
+            )
+        labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
+
+        if comment:
+            comment = ""
+
+        address += data_per_line
+        data = data[data_per_line:]
+
+        print(labeled_line)
+
+
 def main():
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
@@ -110,42 +146,11 @@ def main():
 
     for content in rom.get_content(0, len(romContent) + 1):
         address, region_type, data = content
-        comments = rom.get_comments_at(address)
-
-        label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
 
         if region_type == 'code':
             print_code(rom, address, data, options)
         else:
-            data_per_line = 10
-
-            if label_references:
-                comment = label_references
-            else:
-                comment = ""
-
-            while data:
-                line_data = data[:data_per_line]
-                byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
-
-                character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
-                character_string = "".join(character_list)
-
-                line = "{mnemonic:<8} {data:<39} ; {char_string:10} ; {comment}".format(
-                    mnemonic="defb",
-                    data=byte_string,
-                    char_string=character_string,
-                    comment=comment
-                    )
-                labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
-
-                if comment:
-                    comment = ""
-
-                address += data_per_line
-                data = data[data_per_line:]
-
-                print(labeled_line)
+            print_data(rom, address, data, options)
 
 
 if __name__ == '__main__':
