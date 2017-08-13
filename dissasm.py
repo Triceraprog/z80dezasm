@@ -2,6 +2,7 @@ from z80tools import decode_full
 from z80opcode_strings import decoded_to_string, inject_label_on_call
 from analysis import mark_all_code_regions, mark_all_data_regions, detect_partial_instructions, inject_instructions_on_missing_labels
 from rom import Rom
+from comments import read_comment_file
 import itertools
 
 
@@ -129,6 +130,9 @@ def dump_undefined_labels(rom):
 def main():
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
+
+    with open("comments.txt") as commentsFile:
+        comments, labels= read_comment_file(commentsFile)
 
     with open("vg5000_1.1.rom", "rb") as romFile:
         romContent = romFile.read()
