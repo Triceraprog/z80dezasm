@@ -82,6 +82,9 @@ def print_code(rom, address, data, options):
 
     write_comments_below(rom, address, comments, options)
 
+    if data[0] in ("RET", "RETI", "RETN"):
+        print() # Blank line after return
+
     if "TODO" in line:
         exit(1)
 
