@@ -41,7 +41,7 @@ def write_comments_below(rom, address, comments, options):
         if tag == 'partial-instruction':
             byte_string = memory_to_byte_list(rom.memory[address:address+content[-1]])
             partial_string = decoded_to_string(content[:-1], options=options)
-            line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
+            line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
                 hex_prefix=options.get("hex_prefix", "0x"),
                 pc=address,
                 bytes=byte_string,
