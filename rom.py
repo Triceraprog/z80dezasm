@@ -61,8 +61,8 @@ class Rom():
         self.labels[address] = new_name, callers
 
     def add_comment(self, address, tag, comment):
-        comments = self.comments.get(address, set())
-        comments.update([(tag, comment)])
+        comments = self.comments.get(address, list())
+        comments.append((tag, comment))
         self.comments[address] = comments
 
     def get_comments_at(self, address):
@@ -252,10 +252,10 @@ class RomTestCase(unittest.TestCase):
         self.assertEqual(set(), rom.get_comments_at(0x0003))
 
         result1 = rom.get_comments_at(0x0000)
-        self.assertEqual(set([('after', comment1), ('before', comment2)]), result1)
+        self.assertEqual(set([('after', comment1), ('before', comment2)]), set(result1))
 
         result2 = rom.get_comments_at(0x0001)
-        self.assertEqual(set([('online', comment3)]), result2)
+        self.assertEqual(set([('online', comment3)]), set(result2))
 
 
 if __name__ == '__main__':

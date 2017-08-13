@@ -35,6 +35,15 @@ def create_online_comment(comments, label_references):
     return comment
 
 
+def write_comments_above(rom, address, comments, options):
+    for comment in comments:
+        tag, content = comment
+        if tag == 'above':
+            for line in content:
+                print("; " + line.strip())
+        print(";")
+
+
 def write_comments_below(rom, address, comments, options):
     for comment in comments:
         tag, content = comment
@@ -57,6 +66,8 @@ def print_code(rom, address, data, options):
     comments = rom.get_comments_at(address)
 
     decoded_size = data[-1]
+
+    write_comments_above(rom, address, comments, options)
 
     byte_string = memory_to_byte_list(rom.memory[address:address+decoded_size])
     decoded = inject_label_on_call(rom.labels, data[:-1])
@@ -155,6 +166,10 @@ def main():
     for label in user_labels:
         address, name = label
         rom.name_label(address, name)
+
+    for comment in user_comments:
+        address, tag, lines = comment
+        rom.add_comment(address, tag, lines)
 
     # for r in sorted(rom.ranges):
     #     (begin, end), t = r

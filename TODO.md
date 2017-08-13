@@ -4,6 +4,7 @@
   - Every memorized address is added as a label
   - Unused labels are logged at the end (those which are not named and not pointing to the ROM)
 - Rename Ranges to Regions
+- Rename comment specifiers as tags
 - Merge labels and references parsing
 - Try to detect strings to turn DEFB to DEFM
 - Add hints for register base jumps to trace code and automatic comments
