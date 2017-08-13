@@ -30,7 +30,10 @@ def get_param_str(param, value, options):
             return value
 
     if param == P_IMMEDIATE_16_INDIRECT:
-        return "(" + hex_prefix + "%04X)" % value
+        if isinstance(value, int):
+            return "(" + hex_prefix + "%04X)" % value
+        else:
+            return "(" + value + ")"
 
     if param == P_IMMEDIATE_8:
         return hex_prefix + "%02X" % value
@@ -94,6 +97,13 @@ class FromDecodedToStringTestCase(unittest.TestCase):
     def test_immediate_16_with_label(self):
         decoded = ('JP', None, None, P_IMMEDIATE_16, 'jump1000')
         expected = ('JP', 'jump1000')
+
+        output = decoded_to_string(decoded)
+        self.assertEqual(expected,  output)
+
+    def test_indirect_16_with_label(self):
+        decoded = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16_INDIRECT, 'jump1000')
+        expected = ('LD', 'SP,(jump1000)')
 
         output = decoded_to_string(decoded)
         self.assertEqual(expected,  output)
@@ -192,15 +202,22 @@ class FromDecodedToStringTestCase(unittest.TestCase):
 
 def inject_label_on_call(labels, decoded):
     mnemonic, p1, v1, p2, v2 = decoded
-    if mnemonic in ('JP', 'JR', 'CALL', 'RST') and p2 == P_IMMEDIATE_16:
+    if p1 == P_IMMEDIATE_16 or p1 == P_IMMEDIATE_16_INDIRECT:
+        new_v1 = labels.get(v1, (v1, []))
+        new_v1, _ = new_v1
+    else:
+        new_v1 = v1
+
+    if p2 == P_IMMEDIATE_16 or p2 == P_IMMEDIATE_16_INDIRECT:
         new_v2 = labels.get(v2, (v2, []))
         new_v2, _ = new_v2
-        return (mnemonic, p1, v1, p2, new_v2)
+    else:
+        new_v2 = v2
 
-    return decoded
+    return (mnemonic, p1, new_v1, p2, new_v2)
 
 
-class DecodingJumpsWithLabelsTestCase(unittest.TestCase):
+class InjectingLabelsTestCase(unittest.TestCase):
     def test_address_found_in_label_is_modified_to_label_name(self):
         labels = {0x2238: ('jump2238', [10]), }
 
@@ -236,6 +253,24 @@ class DecodingJumpsWithLabelsTestCase(unittest.TestCase):
         decoded = inject_label_on_call(labels, decoded)
 
         expected = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x2240)
+        self.assertEqual(expected, decoded)
+
+    def test_address_in_immediate_values(self):
+        labels = {0x7E00: ('someLabel', []), }
+
+        decoded = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 32256)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 'someLabel')
+        self.assertEqual(expected, decoded)
+
+    def test_address_in_indirect_values(self):
+        labels = {0x7E00: ('someLabel', []), }
+
+        decoded = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16_INDIRECT, 32256)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16_INDIRECT, 'someLabel')
         self.assertEqual(expected, decoded)
 
 
