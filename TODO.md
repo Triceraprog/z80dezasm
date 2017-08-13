@@ -6,10 +6,10 @@
 - Rename Ranges to Regions
 - Merge labels and references parsing
 - Try to detect strings to turn DEFB to DEFM
-- Label data reference too
-- Labels with code or data
+- Add hints for register base jumps to trace code and automatic comments
 - Comments and labels at specific adresses
 - Don't turn user defined labels as minor cases
+- Labels on data causes break on data output
 - Comments
   - Comments are loaded with either
     - "Comment: address/label place (block above or default/right" CR "comment"
