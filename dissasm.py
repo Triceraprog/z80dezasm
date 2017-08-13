@@ -149,6 +149,10 @@ def main():
     rom = inject_instructions_on_missing_labels(rom)
     rom = detect_partial_instructions(rom)
 
+    for label in user_labels:
+        address, name = label
+        rom.name_label(address, name)
+
     # for r in sorted(rom.ranges):
     #     (begin, end), t = r
     #     output = "${:0>4x}-${:0>4x} {}".format(begin, end, t)
