@@ -202,17 +202,18 @@ class FromDecodedToStringTestCase(unittest.TestCase):
 
 def inject_label_on_call(labels, decoded):
     mnemonic, p1, v1, p2, v2 = decoded
-    if p1 == P_IMMEDIATE_16 or p1 == P_IMMEDIATE_16_INDIRECT:
-        new_v1 = labels.get(v1, (v1, []))
-        new_v1, _ = new_v1
-    else:
-        new_v1 = v1
 
+    new_v1 = v1
+    if p1 == P_IMMEDIATE_16 or p1 == P_IMMEDIATE_16_INDIRECT:
+        if mnemonic in ('JP', 'JR', 'CALL', 'RST') or v1 != 0:
+            new_v1 = labels.get(v1, (v1, []))
+            new_v1, _ = new_v1
+
+    new_v2 = v2
     if p2 == P_IMMEDIATE_16 or p2 == P_IMMEDIATE_16_INDIRECT:
-        new_v2 = labels.get(v2, (v2, []))
-        new_v2, _ = new_v2
-    else:
-        new_v2 = v2
+        if mnemonic in ('JP', 'JR', 'CALL', 'RST') or v2 != 0:
+            new_v2 = labels.get(v2, (v2, []))
+            new_v2, _ = new_v2
 
     return (mnemonic, p1, new_v1, p2, new_v2)
 
@@ -263,6 +264,22 @@ class InjectingLabelsTestCase(unittest.TestCase):
 
         expected = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 'someLabel')
         self.assertEqual(expected, decoded)
+
+    def test_address_in_immediate_values_not_labeling_zero_except_for_jumps(self):
+        labels = {0x0000: ('someLabel', []), }
+
+        decoded = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 0)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('LD', P_REGISTER_PAIR, REG_SP, P_IMMEDIATE_16, 0)
+        self.assertEqual(expected, decoded)
+
+        decoded = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0)
+        decoded = inject_label_on_call(labels, decoded)
+
+        expected = ('JP', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 'someLabel')
+        self.assertEqual(expected, decoded)
+
 
     def test_address_in_indirect_values(self):
         labels = {0x7E00: ('someLabel', []), }

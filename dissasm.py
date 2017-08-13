@@ -63,7 +63,7 @@ def print_code(rom, address, data, options):
     string = decoded_to_string(decoded, options=options)
     comment = create_online_comment(comments, label_references)
 
-    line = "{mnemonic:<8} {args:<15} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
+    line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
         hex_prefix=options.get("hex_prefix", "0x"),
         pc=address,
         bytes=byte_string,
@@ -74,11 +74,11 @@ def print_code(rom, address, data, options):
     labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
     print(labeled_line)
 
-    comment = comment[60:]
+    comment = comment[55:]
     while len(comment):
-        comment_next_line = (" " * 62) + "; " + comment[:60]
+        comment_next_line = (" " * 67) + "; " + comment[:55]
         print(comment_next_line)
-        comment = comment[60:]
+        comment = comment[55:]
 
     write_comments_below(rom, address, comments, options)
 
@@ -105,7 +105,7 @@ def print_data(rom, address, data, options):
         character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
         character_string = "".join(character_list)
 
-        line = "{mnemonic:<8} {data:<39} ; {char_string:10} ; {comment}".format(
+        line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
             mnemonic="defb",
             data=byte_string,
             char_string=character_string,
