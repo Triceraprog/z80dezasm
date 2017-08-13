@@ -9,8 +9,7 @@
 - Label data reference too
 - Labels with code or data
 - Comments and labels at specific adresses
-- Labels
-  - Labels are loaded with "address", "name"
+- Don't turn user defined labels as minor cases
 - Comments
   - Comments are loaded with either
     - "Comment: address/label place (block above or default/right" CR "comment"
