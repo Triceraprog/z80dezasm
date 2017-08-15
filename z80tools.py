@@ -1,6 +1,7 @@
 import unittest
 from two_complement import two_complement_to_signed
 
+
 # xxyyyzzz
 #   ppq
 
@@ -88,6 +89,7 @@ def immediate_8_decode(splitted_opcode, memory):
     operand_8bits = memory[0]
     return (P_IMMEDIATE_8, operand_8bits), 1
 
+
 def immediate_8_indirect_decode(splitted_opcode, memory):
     param, size = immediate_8_decode(splitted_opcode, memory)
     return (P_IMMEDIATE_8_INDIRECT, param[1]), size
@@ -145,11 +147,13 @@ def constant_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
     return (P_IMMEDIATE_8, y), 0
 
+
 def im_from_y(splitted_opcode, memory):
     _, y, _, _, _ = splitted_opcode
     # Second 0 case is to be checked
     im = [0, 0, 1, 2, 0, 0, 1, 2]
     return (P_IMMEDIATE_8, im[y]), 0
+
 
 def constant_8bits(value):
     return lambda splitted_opcode, memory: ((P_IMMEDIATE_8, value), 0)
@@ -157,17 +161,19 @@ def constant_8bits(value):
 
 ALU_MNEMONICS = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
 
+
 def alu_opcode_from_y(splitted_opcode):
     _, y, _, _, _ = splitted_opcode
     return ALU_MNEMONICS[y]
 
 
 BLOCK_MNEMONICS = [
-        ["LDI", "CPI", "INI", "OUTI"],
-        ["LDD", "CPD", "IND", "OUTD"],
-        ["LDIR", "CPIR", "INIR", "OTIR"],
-        ["LDDR", "CPDR", "INDR", "OTDR"],
-    ]
+    ["LDI", "CPI", "INI", "OUTI"],
+    ["LDD", "CPD", "IND", "OUTD"],
+    ["LDIR", "CPIR", "INIR", "OTIR"],
+    ["LDDR", "CPDR", "INDR", "OTDR"],
+]
+
 
 def block_opcode_from_yz(splitted_opcode):
     _, y, z, _, _ = splitted_opcode
@@ -176,6 +182,7 @@ def block_opcode_from_yz(splitted_opcode):
 
 
 SHIFT_ROT_MNEMONICS = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", "SLL", "SRL"]
+
 
 def rot_shift_opcode_from_y(splitted_opcode):
     _, y, _, _, _ = splitted_opcode
@@ -212,8 +219,8 @@ def register_fix_for_dd_and_fd_prefix(decoded, memory, prefix):
             result = mnemonic, p1, v1, P_REGISTER_INDEXED, (substitute, value), size + p_size + 1
 
     elif (mnemonic == "EX" and
-          p1 == P_REGISTER_PAIR and v1 == REG_DE and
-          p2 == P_REGISTER_PAIR and v2 == REG_HL):
+                  p1 == P_REGISTER_PAIR and v1 == REG_DE and
+                  p2 == P_REGISTER_PAIR and v2 == REG_HL):
         return decoded
 
     elif p1 == P_REGISTER_PAIR and v1 == REG_HL:
@@ -246,13 +253,13 @@ ed_table = [((1, 0, range(0, 6)), "IN", register_from_y, register_pair_indirect(
             ((1, 6, range(0, 8)), "IM", im_from_y, None),
 
             ((2, range(0, 4), range(4, 8)), block_opcode_from_yz, None, None)
-             ]
+            ]
 
 cb_table = [((0, range(0, 8), range(0, 8)), rot_shift_opcode_from_y, register_from_z, None),
             ((1, range(0, 8), range(0, 8)), "BIT", constant_from_y, register_from_z),
             ((2, range(0, 8), range(0, 8)), "RES", constant_from_y, register_from_z),
             ((3, range(0, 8), range(0, 8)), "SET", constant_from_y, register_from_z),
-             ]
+            ]
 
 table = [((0, 0, 0), "NOP", None, None),
          ((0, 0, 1), "EX", register(REG_AF), register(REG_AF_PRIME)),
@@ -419,7 +426,7 @@ def decode_full(memory):
                     param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
                     param_2, size_2 = param_2
 
-                    decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2 + prefix_size, )
+                    decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2 + prefix_size,)
                     decoded_instruction = prefix_context_register_fix(decoded_instruction, memory[1:], prefix)
 
                     return decoded_instruction
