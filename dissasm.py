@@ -1,8 +1,8 @@
-from analysis import mark_all_code_regions, mark_all_data_regions,\
+from analysis import mark_all_code_regions, mark_all_data_regions, \
     detect_partial_instructions, inject_instructions_on_missing_labels
 from comments import read_comment_file
 from rom import Rom
-from z80opcode_strings import decoded_to_string, inject_label_on_call
+from z80opcode_strings import decoded_to_string, inject_label_on_call, P_CONDITION
 
 
 def memory_to_byte_list(memory, hex_prefix="", separator=" "):
@@ -85,7 +85,7 @@ def format_comments(list_of_comments, width):
                     comment = ""
                 else:
                     formatted_comments.append(comment[:break_position])
-                    comment = comment[break_position+1:]
+                    comment = comment[break_position + 1:]
 
     return formatted_comments
 
@@ -129,7 +129,7 @@ def print_code(rom, address, data, options):
 
     write_comments_below(rom, address, comments, options)
 
-    if data[0] in ("RET", "RETI", "RETN"):
+    if data[0] in ("RET", "RETI", "RETN") or (data[0] in ("JP", "JR") and data[1] != P_CONDITION):
         print()  # Blank line after return
 
     if "TODO" in line:
@@ -167,7 +167,7 @@ def print_data(rom, address, data, options):
         labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
         print(labeled_line)
 
-        comment = comment[1:]
+        comments_on_the_right = comments_on_the_right[1:]
 
         address += data_per_line
         data = data[data_per_line:]
@@ -200,7 +200,6 @@ def main():
     for entry, tag in user_entries:
         if tag == "code":
             starting_addresses.append(entry)
-
 
     rom = Rom(rom_content)
     rom = mark_all_code_regions(rom, starting_addresses)
