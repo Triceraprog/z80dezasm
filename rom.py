@@ -46,6 +46,7 @@ class Rom:
                 self.labels[key] = name, callers
             else:
                 self.labels[key] = value
+                self.__split_content_at(key)
 
     def get_label_at(self, address):
         return self.labels.get(address, None)
@@ -59,6 +60,8 @@ class Rom:
         name, callers = label
         self.labels[address] = new_name, callers
 
+        self.__split_content_at(address)
+
     def add_comment(self, address, tag, comment):
         comments = self.comments.get(address, list())
         comments.append((tag, comment))
@@ -66,6 +69,34 @@ class Rom:
 
     def get_comments_at(self, address):
         return self.comments.get(address, set())
+
+    def __split_content_at(self, address):
+        if self.get_type(address) != 'data':
+            return
+
+        if address in self.content.keys():
+            return
+
+        content_address = itertools.takewhile(lambda a: a <= address, sorted(self.content.keys()))
+        content_address = list(content_address)
+
+        if not content_address:
+            return
+
+        content_address = content_address[-1]
+        adjusted_length = address - content_address
+
+        content = self.get_content_at(content_address)
+
+        del self.content[content_address]
+
+        address, region_type, data = content
+
+        if len(data) < adjusted_length:
+            return
+
+        self.add_content(address, data[:adjusted_length])
+        self.add_content(address+adjusted_length, data[adjusted_length:])
 
     def __mark_range(self, begin, end, range_type):
         """ begin is inclusive, end is exclusive, to be coherent with range()"""

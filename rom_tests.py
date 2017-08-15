@@ -46,7 +46,7 @@ class RomTestCase(unittest.TestCase):
         self.assertEqual("code", rom.get_type(3))
         self.assertEqual("data", rom.get_type(len(RomTestCase.memory)))
 
-    def test_same_type_ranges_are_merged_if_contiguous(self):
+    def test_same_type_ranges_are_merged_when_marked_if_contiguous(self):
         rom = Rom(RomTestCase.memory)
         rom.mark_code(0x0000, 0x0003)
         rom.mark_code(0x0003, 0x0005)
@@ -96,6 +96,24 @@ class RomTestCase(unittest.TestCase):
         all_labels = [l for l in rom.get_labels()]
         self.assertEqual(3, len(all_labels))
         self.assertEqual(all_labels[0], (0x0000, ('jump0000', [16, 32, 64])))
+
+    def test_add_a_region_causes_data_content_to_be_split(self):
+        content1 = [1, 2, 3, 4]
+        rom = Rom(RomTestCase.memory)
+        rom.mark_data(0, 4)
+        rom.add_content(0x0000, content1)
+
+        label1 = ('data0002', [])
+        labels = {0x0002: label1}
+        rom.add_labels(labels)
+
+        found_contents = []
+        for c in rom.get_content(0, 4):
+            found_contents.append(c)
+
+        self.assertEqual(2, len(found_contents))
+        self.assertEqual((0, 'data', [1, 2]), found_contents[0])
+        self.assertEqual((2, 'data', [3, 4]), found_contents[1])
 
     def test_can_rename_a_label(self):
         label1 = ('jump0000', [0x0010, 0x0020])

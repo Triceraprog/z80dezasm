@@ -12,14 +12,14 @@ def memory_to_byte_list(memory, hex_prefix="", separator=" "):
 
 
 def get_label_and_x_ref(label, hex_prefix):
+    label_name = ""
+    label_references = ""
     if label:
         label_name, label_references = label
         label_name += ":"
         label_name = label_name.lower()
-        label_references = "called from: " + ", ".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
-    else:
-        label_name = ""
-        label_references = ""
+        if label_references:
+            label_references = "called from: " + ", ".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
 
     return label_name, label_references
 
@@ -139,6 +139,23 @@ def print_code(rom, address, data, options):
         exit(1)
 
 
+def print_data_line(data, size, comment, label, hex_prefix):
+    line_data = data[:size]
+    byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
+
+    character_list = [(chr(x) if (32 < x < 127) else ".") for x in line_data]
+    character_string = "".join(character_list)
+
+    line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
+        mnemonic="defb",
+        data=byte_string,
+        char_string=character_string,
+        comment=comment
+    )
+    labeled_line = "{label:<12} {line}".format(label=label, line=line)
+    print(labeled_line)
+
+
 def print_data(rom, address, data, options):
     hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
@@ -150,24 +167,12 @@ def print_data(rom, address, data, options):
     comments_on_the_right = format_comments(comments_on_the_right, width=55)
 
     while data:
-        line_data = data[:data_per_line]
-        byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
-
-        character_list = [(chr(x) if (32 < x < 127) else ".") for x in line_data]
-        character_string = "".join(character_list)
-
         comment = "" if not comments_on_the_right else comments_on_the_right[0]
 
-        line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
-            mnemonic="defb",
-            data=byte_string,
-            char_string=character_string,
-            comment=comment
-        )
-        labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
-        print(labeled_line)
+        print_data_line(data, data_per_line, comment, label_name, hex_prefix)
 
         comments_on_the_right = comments_on_the_right[1:]
+        label_name = ""
 
         address += data_per_line
         data = data[data_per_line:]
