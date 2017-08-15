@@ -76,7 +76,10 @@ def format_comments(list_of_comments, width):
             formatted_comments.append(comment)
         else:
             while comment:
-                break_position = comment[:width].rfind(' ')
+                if len(comment) > width:
+                    break_position = comment[:width].rfind(' ')
+                else:
+                    break_position = len(comment)
                 if break_position == -1:
                     formatted_comments.append(comment)
                     comment = ""
