@@ -16,7 +16,7 @@ def get_label_and_x_ref(label, hex_prefix):
         label_name, label_references = label
         label_name += ":"
         label_name = label_name.lower()
-        label_references = "called from: " + ",".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
+        label_references = "called from: " + ", ".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
     else:
         label_name = ""
         label_references = ""
@@ -25,13 +25,19 @@ def get_label_and_x_ref(label, hex_prefix):
 
 
 def create_online_comment(comments, label_references):
-    comment = label_references if label_references else ""
-    online_comment = [c for c_type, c in comments if c_type == "online"]
+    comment_collection = [label_references] if label_references else []
+    online_comment = [c for c_type, c in comments if c_type == "online" or c_type == "right"]
+    comment_collection.extend(online_comment)
 
-    if online_comment:
-        comment += online_comment[0]
+    adjusted_comments = []
+    for comment in comment_collection:
+        if isinstance(comment, str):
+            adjusted_comments.append(comment.strip())
+        elif isinstance(comment, list):
+            for c in comment:
+                adjusted_comments.append(c.strip())
 
-    return comment
+    return adjusted_comments
 
 
 def write_comments_above(comments):
@@ -63,6 +69,24 @@ def write_comments_below(rom, address, comments, options):
             print(labeled_line)
 
 
+def format_comments(list_of_comments, width):
+    formatted_comments = []
+    for comment in list_of_comments:
+        if len(comment) <= width:
+            formatted_comments.append(comment)
+        else:
+            while comment:
+                break_position = comment[:width].rfind(' ')
+                if break_position == -1:
+                    formatted_comments.append(comment)
+                    comment = ""
+                else:
+                    formatted_comments.append(comment[:break_position])
+                    comment = comment[break_position+1:]
+
+    return formatted_comments
+
+
 def print_code(rom, address, data, options):
     hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
@@ -75,7 +99,12 @@ def print_code(rom, address, data, options):
     byte_string = memory_to_byte_list(rom.memory[address:address + decoded_size])
     decoded = inject_label_on_call(rom.labels, data[:-1])
     string = decoded_to_string(decoded, options=options)
-    comment = create_online_comment(comments, label_references)
+    comments_on_the_right = create_online_comment(comments, label_references)
+    comments_on_the_right = format_comments(comments_on_the_right, width=55)
+
+    first_line_of_comments = ""
+    if comments_on_the_right:
+        first_line_of_comments = comments_on_the_right[0]
 
     line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
         hex_prefix=options.get("hex_prefix", "0x"),
@@ -83,16 +112,17 @@ def print_code(rom, address, data, options):
         bytes=byte_string,
         mnemonic=string[0].lower(),
         args=string[1].lower(),
-        comment=comment[:60])
+        comment=first_line_of_comments)
 
     labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
     print(labeled_line)
 
-    comment = comment[55:]
-    while len(comment):
-        comment_next_line = (" " * 67) + "; " + comment[:55]
-        print(comment_next_line)
-        comment = comment[55:]
+    if comments_on_the_right:
+        comments_on_the_right = comments_on_the_right[1:]
+        while comments_on_the_right:
+            comment_next_line = (" " * 67) + "; " + comments_on_the_right[0]
+            print(comment_next_line)
+            comments_on_the_right = comments_on_the_right[1:]
 
     write_comments_below(rom, address, comments, options)
 
@@ -113,7 +143,8 @@ def print_data(rom, address, data, options):
 
     data_per_line = 10
 
-    comment = create_online_comment(comments, label_references)
+    comments_on_the_right = create_online_comment(comments, label_references)
+    comments_on_the_right = format_comments(comments_on_the_right, width=55)
 
     while data:
         line_data = data[:data_per_line]
@@ -121,6 +152,8 @@ def print_data(rom, address, data, options):
 
         character_list = [(chr(x) if (32 < x < 127) else ".") for x in line_data]
         character_string = "".join(character_list)
+
+        comment = "" if not comments_on_the_right else comments_on_the_right[0]
 
         line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
             mnemonic="defb",
@@ -131,7 +164,7 @@ def print_data(rom, address, data, options):
         labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
         print(labeled_line)
 
-        comment = ""
+        comment = comment[1:]
 
         address += data_per_line
         data = data[data_per_line:]
