@@ -35,11 +35,15 @@ def create_online_comment(comments, label_references):
 
 
 def write_comments_above(comments):
-    for comment in comments:
-        tag, content = comment
-        if tag == 'above':
+    above_comments = [content for tag, content in comments if tag == 'above']
+
+    if above_comments:
+        print(";")
+
+        for content in above_comments:
             for line in content:
                 print("; " + line.strip())
+
         print(";")
 
 
