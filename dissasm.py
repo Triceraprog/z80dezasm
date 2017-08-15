@@ -186,7 +186,7 @@ def main():
     options = {"hex_prefix": hex_prefix}
 
     with open("comments.txt") as commentsFile:
-        user_comments, user_labels = read_comment_file(commentsFile)
+        user_comments, user_labels, user_entries = read_comment_file(commentsFile)
 
     with open("vg5000_1.1.rom", "rb") as romFile:
         rom_content = romFile.read()
@@ -196,6 +196,11 @@ def main():
     # Adding RST addresses
     for rst in range(1, 8):
         starting_addresses.append(rst * 8)
+
+    for entry, tag in user_entries:
+        if tag == "code":
+            starting_addresses.append(entry)
+
 
     rom = Rom(rom_content)
     rom = mark_all_code_regions(rom, starting_addresses)
