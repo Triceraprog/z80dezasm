@@ -1,13 +1,12 @@
-from z80tools import decode_full
-from z80opcode_strings import decoded_to_string, inject_label_on_call
-from analysis import mark_all_code_regions, mark_all_data_regions, detect_partial_instructions, inject_instructions_on_missing_labels
-from rom import Rom
+from analysis import mark_all_code_regions, mark_all_data_regions,\
+    detect_partial_instructions, inject_instructions_on_missing_labels
 from comments import read_comment_file
-import itertools
+from rom import Rom
+from z80opcode_strings import decoded_to_string, inject_label_on_call
 
 
 def memory_to_byte_list(memory, hex_prefix="", separator=" "):
-    byte_list = [(hex_prefix+"%02x") % x for x in memory]
+    byte_list = [(hex_prefix + "%02x") % x for x in memory]
     byte_string = separator.join(byte_list)
     return byte_string
 
@@ -35,7 +34,7 @@ def create_online_comment(comments, label_references):
     return comment
 
 
-def write_comments_above(rom, address, comments, options):
+def write_comments_above(comments):
     for comment in comments:
         tag, content = comment
         if tag == 'above':
@@ -48,7 +47,7 @@ def write_comments_below(rom, address, comments, options):
     for comment in comments:
         tag, content = comment
         if tag == 'partial-instruction':
-            byte_string = memory_to_byte_list(rom.memory[address:address+content[-1]])
+            byte_string = memory_to_byte_list(rom.memory[address:address + content[-1]])
             partial_string = decoded_to_string(content[:-1], options=options)
             line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
                 hex_prefix=options.get("hex_prefix", "0x"),
@@ -61,15 +60,15 @@ def write_comments_below(rom, address, comments, options):
 
 
 def print_code(rom, address, data, options):
-    hex_prefix=options.get("hex_prefix", "0x")
+    hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
     comments = rom.get_comments_at(address)
 
     decoded_size = data[-1]
 
-    write_comments_above(rom, address, comments, options)
+    write_comments_above(comments)
 
-    byte_string = memory_to_byte_list(rom.memory[address:address+decoded_size])
+    byte_string = memory_to_byte_list(rom.memory[address:address + decoded_size])
     decoded = inject_label_on_call(rom.labels, data[:-1])
     string = decoded_to_string(decoded, options=options)
     comment = create_online_comment(comments, label_references)
@@ -94,7 +93,7 @@ def print_code(rom, address, data, options):
     write_comments_below(rom, address, comments, options)
 
     if data[0] in ("RET", "RETI", "RETN"):
-        print() # Blank line after return
+        print()  # Blank line after return
 
     if "TODO" in line:
         exit(1)
@@ -104,7 +103,7 @@ def print_code(rom, address, data, options):
 
 
 def print_data(rom, address, data, options):
-    hex_prefix=options.get("hex_prefix", "0x")
+    hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
     comments = rom.get_comments_at(address)
 
@@ -116,7 +115,7 @@ def print_data(rom, address, data, options):
         line_data = data[:data_per_line]
         byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
 
-        character_list = [(chr(x) if (x > 32 and x < 127) else ".") for x in line_data]
+        character_list = [(chr(x) if (32 < x < 127) else ".") for x in line_data]
         character_string = "".join(character_list)
 
         line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
@@ -124,7 +123,7 @@ def print_data(rom, address, data, options):
             data=byte_string,
             char_string=character_string,
             comment=comment
-            )
+        )
         labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
         print(labeled_line)
 
@@ -141,15 +140,16 @@ def dump_undefined_labels(rom):
         if address > memory_size or not rom.get_content_at(address):
             print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
 
+
 def main():
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
 
     with open("comments.txt") as commentsFile:
-        user_comments, user_labels= read_comment_file(commentsFile)
+        user_comments, user_labels = read_comment_file(commentsFile)
 
     with open("vg5000_1.1.rom", "rb") as romFile:
-        romContent = romFile.read()
+        rom_content = romFile.read()
 
     starting_addresses = [0x0000]
 
@@ -157,7 +157,7 @@ def main():
     for rst in range(1, 8):
         starting_addresses.append(rst * 8)
 
-    rom = Rom(romContent)
+    rom = Rom(rom_content)
     rom = mark_all_code_regions(rom, starting_addresses)
     rom = mark_all_data_regions(rom)
     rom = inject_instructions_on_missing_labels(rom)
@@ -177,7 +177,7 @@ def main():
     #     print(output)
     # exit()
 
-    for content in rom.get_content(0, len(romContent) + 1):
+    for content in rom.get_content(0, len(rom_content) + 1):
         address, region_type, data = content
 
         if region_type == 'code':

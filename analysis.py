@@ -1,17 +1,19 @@
 import unittest
 
-from z80tools import decode_full, P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ, P_REGISTER_PAIR, REG_HL, REG_BC, P_IMMEDIATE_8
+from z80tools import decode_full, \
+    P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ, P_REGISTER_PAIR, \
+    REG_HL, REG_BC, P_IMMEDIATE_8
 from rom import Rom
 
-def is_unconditionnal_jump(fully_decoded):
+
+def is_unconditional_jump(fully_decoded):
     mnemonic, p1, v1, p2, v2, size = fully_decoded
-    return ((mnemonic in ("JP", "JR") and p1 == None and (p2 == P_IMMEDIATE_16 or p2 == P_DISPLACEMENT))
+    return ((mnemonic in ("JP", "JR") and p1 is None and (p2 == P_IMMEDIATE_16 or p2 == P_DISPLACEMENT))
             or
-            (mnemonic in ("RET", "RETI", "RETN") and p1 == None and p2 == None))
+            (mnemonic in ("RET", "RETI", "RETN") and p1 is None and p2 is None))
 
 
-
-def find_next_unconditionnal_jump(memory, start):
+def find_next_unconditional_jump(memory, start):
     last_address = len(memory)
     pc = start
     decoded_instructions = []
@@ -21,9 +23,9 @@ def find_next_unconditionnal_jump(memory, start):
         size = fully_decoded[-1]
         pc += size
 
-        if is_unconditionnal_jump(fully_decoded) or size == 0:
+        if is_unconditional_jump(fully_decoded) or size == 0:
             break
-            
+
     return decoded_instructions, (pc - start)
 
 
@@ -93,8 +95,6 @@ def detect_partial_instruction_tricks(instructions, memory):
         pc1, (_, _, _, _, _, size) = instruction
         pc2, (_, _, _, _, _, _) = following
 
-        end_address = pc1 + size
-
         while pc1 < pc2:
             replacement = (pc1, ("DEFB", None, None, P_IMMEDIATE_8, memory[pc1], 1))
             instructions.insert(index, replacement)
@@ -112,7 +112,7 @@ def mark_all_code_regions(rom, starting_addresses):
         starting_addresses = starting_addresses[1:]
 
         if rom.get_type(start) == 'unknown':
-            instructions, total_size = find_next_unconditionnal_jump(rom.memory, start)
+            instructions, total_size = find_next_unconditional_jump(rom.memory, start)
             rom.mark_code(start, start + total_size)
 
             instructions = adjust_relative_displacements(instructions)
@@ -214,7 +214,7 @@ class RomCodeTestCase(unittest.TestCase):
         memory = [0xC3, 0x09, 0x00, 0x50, 0x52, 0x49, 0x4E, 0x54, 0x00, 0xC3, 0x00, 0x00]
 
         start = 0x0000
-        instructions, total_size = find_next_unconditionnal_jump(memory, start)
+        instructions, total_size = find_next_unconditional_jump(memory, start)
         self.assertEqual(1, len(instructions))
         self.assertEqual(3, total_size)
 
@@ -226,10 +226,9 @@ class RomCodeTestCase(unittest.TestCase):
         memory = [0xC3]
 
         start = 0x0000
-        instructions, total_size = find_next_unconditionnal_jump(memory, start)
+        instructions, total_size = find_next_unconditional_jump(memory, start)
         self.assertEqual(1, len(instructions))
         self.assertEqual(0, total_size)
-
 
     def test_adjust_relative_displacements_for_jr_and_djnz(self):
         instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 9, 3)),
@@ -279,7 +278,7 @@ class RomCodeTestCase(unittest.TestCase):
         self.assertEqual(("loop1000", [0x1003]), labels[0x1000])
         self.assertEqual(("skip100B", [0x1005]), labels[0x100B])
         self.assertEqual(("call2000", [0x1007]), labels[0x2000])
-        self.assertEqual(("rst0038",  [0x100A]), labels[0x0038])
+        self.assertEqual(("rst0038", [0x100A]), labels[0x0038])
 
     def test_detect_partial_instruction_tricks(self):
         memory = [0x00] * 0x285C + [0x00, 0x00, 0x00, 0x28, 0xDB, 0x00]

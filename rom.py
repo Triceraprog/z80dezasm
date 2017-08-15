@@ -3,7 +3,7 @@ import functools
 import itertools
 
 
-class Rom():
+class Rom:
     def __init__(self, memory):
         self.memory = memory
         self.ranges = []
@@ -97,9 +97,7 @@ class Rom():
     def __find_overlapping_range(self, begin, end):
         for r in sorted(self.ranges):
             limits = r[0]
-            if ((begin < limits[0] and end > limits[0])
-                or
-                (begin >= limits[0] and begin < limits[1])):
+            if (begin < limits[0] < end) or (limits[0] <= begin < limits[1]):
                 return r
 
         return None
@@ -126,7 +124,6 @@ def merge_neighbours(acc, new):
 
     else:
         return [new]
-
 
 
 class RomTestCase(unittest.TestCase):
@@ -221,7 +218,7 @@ class RomTestCase(unittest.TestCase):
 
         all_labels = [l for l in rom.get_labels()]
         self.assertEqual(3, len(all_labels))
-        self.assertEqual(all_labels[0], (0x0000, ('jump0000', [16, 32, 64])) )
+        self.assertEqual(all_labels[0], (0x0000, ('jump0000', [16, 32, 64])))
 
     def test_can_rename_a_label(self):
         label1 = ('jump0000', [0x0010, 0x0020])
@@ -238,7 +235,6 @@ class RomTestCase(unittest.TestCase):
         rom.add_labels({0x0000: ("jump", [0x0040])})
         self.assertEqual(('Start', [0x0010, 0x0020, 0x0030, 0x0040]), rom.get_label_at(0x0000))
 
-
     def test_can_add_comments_to_rom(self):
         comment1 = "This is a comment after an address"
         comment2 = "This is a comment before an address"
@@ -252,10 +248,10 @@ class RomTestCase(unittest.TestCase):
         self.assertEqual(set(), rom.get_comments_at(0x0003))
 
         result1 = rom.get_comments_at(0x0000)
-        self.assertEqual(set([('after', comment1), ('before', comment2)]), set(result1))
+        self.assertEqual({('after', comment1), ('before', comment2)}, set(result1))
 
         result2 = rom.get_comments_at(0x0001)
-        self.assertEqual(set([('online', comment3)]), set(result2))
+        self.assertEqual({('online', comment3)}, set(result2))
 
 
 if __name__ == '__main__':

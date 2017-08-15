@@ -1,5 +1,6 @@
-import unittest
 from z80tools import *
+
+import unittest
 
 
 class DecodeTestCase(unittest.TestCase):
@@ -19,7 +20,7 @@ class DecodeTestCase(unittest.TestCase):
     def test_decode_of_nop(self):
         self.assertSimpleInstructions(0x00, "NOP")
 
-    def test_decode_of_nop(self):
+    def test_decode_of_ex(self):
         memory = [0x08]
         expected = ("EX", P_REGISTER_PAIR, REG_AF, P_REGISTER_PAIR, REG_AF_PRIME)
         self.assertEqual(expected, decode(memory))
@@ -377,7 +378,6 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("POP", P_REGISTER_PAIR, REG_AF, None, None)
         self.assertEqual(expected, decode(memory))
 
-
     def test_decode_of_various_x_3_z_1(self):
         self.assertSimpleInstructions(0xC9, "RET")
         self.assertSimpleInstructions(0xD9, "EXX")
@@ -483,7 +483,7 @@ class DecodeTestCase(unittest.TestCase):
         expected = ("CALL", P_CONDITION, COND_M, P_IMMEDIATE_16, 0x1000)
         self.assertEqual(expected, decode(memory))
 
-    def test_decode_of_conditional_call(self):
+    def test_decode_of_push(self):
         memory = [0xC5]
         expected = ("PUSH", None, None, P_REGISTER_PAIR, REG_BC)
         self.assertEqual(expected, decode(memory))
