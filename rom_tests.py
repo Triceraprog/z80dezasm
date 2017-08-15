@@ -130,6 +130,18 @@ class RomTestCase(unittest.TestCase):
         result2 = rom.get_comments_at(0x0001)
         self.assertEqual({('online', comment3)}, set(result2))
 
+    def test_can_add_several_comments_with_the_same_tag(self):
+        comment1 = "This is first comment online"
+        comment2 = "This is second comment online"
+
+        rom = Rom(RomTestCase.memory)
+        rom.add_comment(0x0000, 'right', comment1)
+        rom.add_comment(0x0000, 'right', comment2)
+
+        comments = rom.get_comments_at(0x0000)
+
+        self.assertEqual(2, len(comments))
+
 
 if __name__ == '__main__':
     unittest.main()
