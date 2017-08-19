@@ -88,12 +88,12 @@ class Rom:
 
         content = self.get_content_at(content_address)
 
-        del self.content[content_address]
-
         address, region_type, data = content
 
         if len(data) < adjusted_length:
             return
+
+        del self.content[content_address]
 
         self.add_content(address, data[:adjusted_length])
         self.add_content(address+adjusted_length, data[adjusted_length:])
