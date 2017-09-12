@@ -64,7 +64,7 @@ def read_comment_file_contents(lines):
                 entries.append((address, 'code'))
 
         elif line.startswith("$"):
-            parameters = line.split("/")
+            parameters = stripped_line.split("/")
             last_p = parameters[-1]
             comment = []
             if ":" in last_p:
@@ -154,12 +154,12 @@ class CommentReadingTestCase(unittest.TestCase):
         self.assertEqual([], comments)
 
     def test_can_read_mixed_entry(self):
-        lines = ["$2250/some_label/code/above", "This is a comment"]
+        lines = ["$2250/some_label/code/above", "This is a comment", "Multiline"]
 
         comments, labels, entries = read_comment_file_contents(lines)
         self.assertEqual([(0x2250, "code")], entries)
         self.assertEqual([(0x2250, "some_label")], labels)
-        self.assertEqual([(0x2250, "above", ["This is a comment"])], comments)
+        self.assertEqual([(0x2250, "above", ["This is a comment", "Multiline"])], comments)
 
     def test_can_read_mixed_entry_with_comment(self):
         lines = ["$2250/some_label/code:This is a comment"]
