@@ -63,6 +63,41 @@ def read_comment_file_contents(lines):
                 address = int(address[1:], 16)
                 entries.append((address, 'code'))
 
+        elif line.startswith("$"):
+            parameters = line.split("/")
+            last_p = parameters[-1]
+            comment = []
+            if ":" in last_p:
+                splitted = last_p.split(":")
+                comment = [":".join(splitted[1:])]
+                parameters = parameters[:-1] + [splitted[0]]
+
+            address = parameters[0]
+            if address[0] != "$":
+                print("Please use $ for specifying hex addresses: " + line)
+                return
+            else:
+                address = int(address[1:], 16)
+
+            for p in parameters[1:]:
+                if p == "code":
+                    entries.append((address, 'code'))
+                elif p == "above" or p == "right":
+                    in_comment = (address, p, comment)
+                else:
+                    labels.append((address, p))
+
+            if not in_comment:
+                if comment:
+                    comment = (address, "right", comment)
+                    comments.append(comment)
+                else:
+                    in_comment = (address, "right", [])
+            else:
+                if comment:
+                    comments.append(in_comment)
+                    in_comment = None
+
         else:
             if in_comment:
                 if not stripped_line:
@@ -117,6 +152,30 @@ class CommentReadingTestCase(unittest.TestCase):
         self.assertEqual([(0x2250, "code")], entries)
         self.assertEqual([], labels)
         self.assertEqual([], comments)
+
+    def test_can_read_mixed_entry(self):
+        lines = ["$2250/some_label/code/above", "This is a comment"]
+
+        comments, labels, entries = read_comment_file_contents(lines)
+        self.assertEqual([(0x2250, "code")], entries)
+        self.assertEqual([(0x2250, "some_label")], labels)
+        self.assertEqual([(0x2250, "above", ["This is a comment"])], comments)
+
+    def test_can_read_mixed_entry_with_comment(self):
+        lines = ["$2250/some_label/code:This is a comment"]
+
+        comments, labels, entries = read_comment_file_contents(lines)
+        self.assertEqual([(0x2250, "code")], entries)
+        self.assertEqual([(0x2250, "some_label")], labels)
+        self.assertEqual([(0x2250, "right", ["This is a comment"])], comments)
+
+    def test_can_read_simple_entry(self):
+        lines = ["$2250:$1234 some comment starting with an address"]
+
+        comments, labels, entries = read_comment_file_contents(lines)
+        self.assertEqual([], entries)
+        self.assertEqual([], labels)
+        self.assertEqual([(0x2250, "right", ["$1234 some comment starting with an address"])], comments)
 
 
 if __name__ == '__main__':
