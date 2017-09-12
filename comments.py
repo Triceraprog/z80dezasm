@@ -64,6 +64,11 @@ def read_comment_file_contents(lines):
                 entries.append((address, 'code'))
 
         elif line.startswith("$"):
+            if in_comment:
+                if in_comment[2]:
+                    comments.append(in_comment)
+                in_comment = None
+
             parameters = stripped_line.split("/")
             last_p = parameters[-1]
             comment = []
