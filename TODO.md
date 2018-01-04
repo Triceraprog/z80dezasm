@@ -12,3 +12,4 @@
 - Labels on data causes break on data output
 - More compact format for one line comments on the right
 - Can add comments on def'd addresses
+- State difference between beeing called and being jumped in
