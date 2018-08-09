@@ -182,7 +182,7 @@ def dump_undefined_labels(rom):
     memory_size = len(rom.memory)
     for label in rom.get_labels():
         address, (name, refs) = label
-        if address > memory_size or not rom.get_content_at(address):
+        if address >= memory_size or not rom.get_content_at(address):
             print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
 
 
