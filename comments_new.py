@@ -98,10 +98,15 @@ class NewCommentParser:
         self.current_address = 0
         self.current_type = ""
 
+    def __agglomerate_text(self, new_text):
+        self.text_accumulator.append(new_text)
+        return " ".join(self.text_accumulator)
+
     def feed(self, line: str):
         starts_with_address, address = get_starting_address(line)
         if starts_with_address:
             self.current_address = address
+            self.text_accumulator = []
             second_part_position = 5
 
             if line[5] == '-':
@@ -117,8 +122,8 @@ class NewCommentParser:
             if t is COMMENT_TYPE_LABEL:
                 self.labels[address] = content
             elif t is COMMENT_TYPE_TEXT:
-                self.text_accumulator.append(content)
-                self.texts[address] = " ".join(self.text_accumulator)
+                agglomerated_text = self.__agglomerate_text(content)
+                self.texts[address] = agglomerated_text
             elif t is COMMENT_TYPE_DIRECTIVE:
                 self.directives[address] = content
             self.current_type = t
@@ -128,8 +133,7 @@ class NewCommentParser:
             if t is COMMENT_TYPE_DIRECTIVE:
                 self.directives[self.current_address] = content
             else:
-                self.text_accumulator.append(content)
-                agglomerated_text = " ".join(self.text_accumulator)
+                agglomerated_text = self.__agglomerate_text(content)
                 if self.current_type is COMMENT_TYPE_LABEL:
                     self.descriptions[self.current_address] = agglomerated_text
                 else:
@@ -242,6 +246,18 @@ class NewCommentsFormatTestCase(unittest.TestCase):
                          c.get_comment_at(0x0030))
         self.assertTrue(c.is_multiline(0x0030))
         self.assertEqual(0x0040, c.end_address_for_comment_at(0x0030))
+
+    def test_can_read_a_sequence_of_comments(self):
+        s = [r"$0030        This is a first comment",
+             r"             and it's multiline.",
+             r"$0040        This is a single line comment."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("This is a first comment and it's multiline.", c.get_comment_at(0x0030))
+        self.assertEqual("This is a single line comment.", c.get_comment_at(0x0040))
 
 
 if __name__ == '__main__':
