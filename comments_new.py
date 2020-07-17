@@ -106,13 +106,19 @@ class NewCommentParser:
             if t is COMMENT_TYPE_LABEL:
                 self.labels[address] = content
             elif t is COMMENT_TYPE_TEXT:
-                self.texts[address] = content
+                self.text_accumulator.append(content)
+                self.texts[address] = " ".join(self.text_accumulator)
             elif t is COMMENT_TYPE_DIRECTIVE:
                 self.directives[address] = content
         else:
             content = line.strip()
             self.text_accumulator.append(content)
-            self.descriptions[self.current_address] = " ".join(self.text_accumulator)
+
+            agglomerated_text = " ".join(self.text_accumulator)
+            if self.current_address not in self.texts:
+                self.descriptions[self.current_address] = agglomerated_text
+            else:
+                self.texts[self.current_address] = agglomerated_text
 
     def get_label_at(self, addr: int):
         return self.labels.get(addr)
@@ -163,6 +169,17 @@ class NewCommentsFormatTestCase(unittest.TestCase):
 
         self.assertEqual("This is a descriptive text for the function and it is a multiline text.",
                          c.get_description_at(0x0020))
+
+    def test_can_read_a_multiline_text(self):
+        s = [r"$0030		This is a multiline text to describe a single address",
+             r"             and it is a multiline text."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
+                         c.get_comment_at(0x0030))
 
 
 if __name__ == '__main__':
