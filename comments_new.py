@@ -95,6 +95,7 @@ class NewCommentParser:
 
         self.text_accumulator = []
         self.current_address = 0
+        self.current_type = ""
 
     def feed(self, line: str):
         starts_with_address, address = get_starting_address(line)
@@ -110,15 +111,19 @@ class NewCommentParser:
                 self.texts[address] = " ".join(self.text_accumulator)
             elif t is COMMENT_TYPE_DIRECTIVE:
                 self.directives[address] = content
+            self.current_type = t
         else:
-            content = line.strip()
-            self.text_accumulator.append(content)
+            t, content = get_type_and_content(line.strip())
 
-            agglomerated_text = " ".join(self.text_accumulator)
-            if self.current_address not in self.texts:
-                self.descriptions[self.current_address] = agglomerated_text
+            if t is COMMENT_TYPE_DIRECTIVE:
+                self.directives[self.current_address] = content
             else:
-                self.texts[self.current_address] = agglomerated_text
+                self.text_accumulator.append(content)
+                agglomerated_text = " ".join(self.text_accumulator)
+                if self.current_type is COMMENT_TYPE_LABEL:
+                    self.descriptions[self.current_address] = agglomerated_text
+                else:
+                    self.texts[self.current_address] = agglomerated_text
 
     def get_label_at(self, addr: int):
         return self.labels.get(addr)
@@ -180,6 +185,34 @@ class NewCommentsFormatTestCase(unittest.TestCase):
 
         self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
                          c.get_comment_at(0x0030))
+
+    def test_can_read_a_multiline_text_after_a_directive(self):
+        s = [r"$0040		%NTS",
+             r"             This is a multiline text to describe a single address",
+             r"             and it is a multiline text."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
+                         c.get_comment_at(0x0040))
+        self.assertEqual(["NTS"], c.get_directives_at(0x0040))
+
+    def test_can_read_a_directive_after_a_label(self):
+        s = [r"$0040		[directive]",
+             r"             %NTS",
+             r"             This is a multiline text to describe a single address",
+             r"             and it is a multiline text."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("directive", c.get_label_at(0x0040))
+        self.assertEqual(["NTS"], c.get_directives_at(0x0040))
+        self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
+                         c.get_description_at(0x0040))
 
 
 if __name__ == '__main__':
