@@ -41,6 +41,7 @@ class UtilityFunctionTestCase(unittest.TestCase):
 
 COMMENT_TYPE_LABEL = "LABEL"
 COMMENT_TYPE_TEXT = "TEXT"
+COMMENT_TYPE_DIRECTIVE = "DIRECTIVE"
 COMMENT_TYPE_ERROR = "ERROR"
 
 
@@ -53,6 +54,8 @@ def get_type_and_content(s: str):
             return COMMENT_TYPE_LABEL, s[1:-1]
         else:
             return COMMENT_TYPE_ERROR, s
+    elif s[0] == '%':
+        return COMMENT_TYPE_DIRECTIVE, s[1:].split(',')
     else:
         return COMMENT_TYPE_TEXT, s
 
@@ -76,11 +79,18 @@ class ExtractCommentTestCase(unittest.TestCase):
         self.assertIs(COMMENT_TYPE_TEXT, t)
         self.assertEqual("This is some text", c)
 
+    def test_can_extract_directives(self):
+        t, c = get_type_and_content("%NTS,CODE")
+
+        self.assertIs(COMMENT_TYPE_DIRECTIVE, t)
+        self.assertEqual(["NTS", "CODE"], c)
+
 
 class NewCommentParser:
     def __init__(self):
         self.labels = {}
         self.texts = {}
+        self.directives = {}
 
     def feed(self, line: str):
         starts_with_address, address = get_starting_address(line)
@@ -92,12 +102,17 @@ class NewCommentParser:
                 self.labels[address] = content
             elif t is COMMENT_TYPE_TEXT:
                 self.texts[address] = content
+            elif t is COMMENT_TYPE_DIRECTIVE:
+                self.directives[address] = content
 
     def get_label_at(self, addr: int):
         return self.labels.get(addr)
 
     def get_comment_at(self, addr: int):
         return self.texts.get(addr)
+
+    def get_directives_at(self, addr: int):
+        return self.directives.get(addr)
 
 
 class NewCommentsFormatTestCase(unittest.TestCase):
@@ -116,6 +131,14 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         c.feed(s)
 
         self.assertEqual("This is a comment.", c.get_comment_at(0x0010))
+
+    def test_can_read_a_single_directive(self):
+        s = r"$0020		%NTS"
+
+        c = NewCommentParser()
+        c.feed(s)
+
+        self.assertEqual(["NTS"], c.get_directives_at(0x0020))
 
 
 if __name__ == '__main__':
