@@ -92,6 +92,7 @@ class NewCommentParser:
         self.texts = {}
         self.directives = {}
         self.descriptions = {}
+        self.end_address = {}
 
         self.text_accumulator = []
         self.current_address = 0
@@ -101,7 +102,16 @@ class NewCommentParser:
         starts_with_address, address = get_starting_address(line)
         if starts_with_address:
             self.current_address = address
-            second_part = line[5:].strip()
+            second_part_position = 5
+
+            if line[5] == '-':
+                has_second_address, end_address = get_starting_address(line[6:])
+
+                if has_second_address:
+                    second_part_position = 11
+                    self.end_address[address] = end_address
+
+            second_part = line[second_part_position:].strip()
 
             t, content = get_type_and_content(second_part)
             if t is COMMENT_TYPE_LABEL:
@@ -136,6 +146,12 @@ class NewCommentParser:
 
     def get_description_at(self, addr: int):
         return self.descriptions.get(addr)
+
+    def is_multiline(self, addr: int):
+        return addr in self.end_address
+
+    def end_address_for_comment_at(self, addr: int):
+        return self.end_address.get(addr)
 
 
 class NewCommentsFormatTestCase(unittest.TestCase):
@@ -213,6 +229,19 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         self.assertEqual(["NTS"], c.get_directives_at(0x0040))
         self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
                          c.get_description_at(0x0040))
+
+    def test_can_read_a_multiline_text_after_an_address_range(self):
+        s = [r"$0030-$0040  This is a multiline text to describe an address range",
+             r"             and it is a multiline text."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("This is a multiline text to describe an address range and it is a multiline text.",
+                         c.get_comment_at(0x0030))
+        self.assertTrue(c.is_multiline(0x0030))
+        self.assertEqual(0x0040, c.end_address_for_comment_at(0x0030))
 
 
 if __name__ == '__main__':
