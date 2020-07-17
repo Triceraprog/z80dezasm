@@ -1,0 +1,15 @@
+$0000		[rom_start]
+			Ce commentaire sera situé au-dessus puisqu'il est avec le label
+
+$0004		%NTS
+
+$0008		[chk_chr]
+			F: Check Character
+			I: HL, adresse du caractère à vérifier
+			O: ...
+
+$0008		Met dans A le caractère pointé par HL
+
+$0009-$000c	L'adresse de retour présente sur la pile est prise pour
+			l'adresse du deuxième argument...
+
