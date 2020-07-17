@@ -91,10 +91,15 @@ class NewCommentParser:
         self.labels = {}
         self.texts = {}
         self.directives = {}
+        self.descriptions = {}
+
+        self.text_accumulator = []
+        self.current_address = 0
 
     def feed(self, line: str):
         starts_with_address, address = get_starting_address(line)
         if starts_with_address:
+            self.current_address = address
             second_part = line[5:].strip()
 
             t, content = get_type_and_content(second_part)
@@ -104,6 +109,10 @@ class NewCommentParser:
                 self.texts[address] = content
             elif t is COMMENT_TYPE_DIRECTIVE:
                 self.directives[address] = content
+        else:
+            content = line.strip()
+            self.text_accumulator.append(content)
+            self.descriptions[self.current_address] = " ".join(self.text_accumulator)
 
     def get_label_at(self, addr: int):
         return self.labels.get(addr)
@@ -113,6 +122,9 @@ class NewCommentParser:
 
     def get_directives_at(self, addr: int):
         return self.directives.get(addr)
+
+    def get_description_at(self, addr: int):
+        return self.descriptions.get(addr)
 
 
 class NewCommentsFormatTestCase(unittest.TestCase):
@@ -139,6 +151,18 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         c.feed(s)
 
         self.assertEqual(["NTS"], c.get_directives_at(0x0020))
+
+    def test_can_read_a_description_text_after_a_label(self):
+        s = [r"$0020		[function]",
+             r"             This is a descriptive text for the function",
+             r"             and it is a multiline text."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("This is a descriptive text for the function and it is a multiline text.",
+                         c.get_description_at(0x0020))
 
 
 if __name__ == '__main__':
