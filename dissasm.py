@@ -1,6 +1,7 @@
 from analysis import mark_all_code_regions, mark_all_data_regions, \
     detect_partial_instructions, inject_instructions_on_missing_labels
 from comments import read_comment_file
+from comments_new import read_new_comment_file
 from rom import Rom
 from z80opcode_strings import decoded_to_string, inject_label_on_call, P_CONDITION
 
@@ -186,9 +187,19 @@ def dump_undefined_labels(rom):
             print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
 
 
-def load_rom_with_comments():
+def read_old_comments():
     with open("comments.txt") as commentsFile:
-        user_comments, user_labels, user_entries = read_comment_file(commentsFile)
+        return read_comment_file(commentsFile)
+
+
+def read_new_comments():
+    with open("new_comments.txt") as commentsFile:
+        return read_new_comment_file(commentsFile)
+
+
+def load_rom_with_comments():
+    # user_comments, user_labels, user_entries = read_old_comments()
+    user_comments, user_labels, user_entries = read_new_comments()
 
     with open("vg5000_1.1.rom", "rb") as romFile:
         rom_content = romFile.read()
