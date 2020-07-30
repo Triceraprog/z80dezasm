@@ -79,7 +79,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         for line in s:
             c.feed(line)
 
-        self.assertEqual("This is a descriptive text for the function and it is a multiline text.",
+        self.assertEqual("This is a descriptive text for the function\nand it is a multiline text.",
                          c.get_description_at(0x0020))
 
     def test_can_read_a_multiline_text(self):
@@ -90,7 +90,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         for line in s:
             c.feed(line)
 
-        self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
+        self.assertEqual("This is a multiline text to describe a single address\nand it is a multiline text.",
                          c.get_comment_at(0x0030))
 
     def test_can_read_a_multiline_text_after_a_directive(self):
@@ -102,7 +102,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         for line in s:
             c.feed(line)
 
-        self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
+        self.assertEqual("This is a multiline text to describe a single address\nand it is a multiline text.",
                          c.get_comment_at(0x0040))
         self.assertEqual(["NTS"], c.get_directives_at(0x0040))
 
@@ -118,7 +118,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
 
         self.assertEqual("directive", c.get_label_at(0x0040))
         self.assertEqual(["NTS"], c.get_directives_at(0x0040))
-        self.assertEqual("This is a multiline text to describe a single address and it is a multiline text.",
+        self.assertEqual("This is a multiline text to describe a single address\nand it is a multiline text.",
                          c.get_description_at(0x0040))
 
     def test_can_read_a_multiline_text_after_an_address_range(self):
@@ -129,7 +129,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         for line in s:
             c.feed(line)
 
-        self.assertEqual("This is a multiline text to describe an address range and it is a multiline text.",
+        self.assertEqual("This is a multiline text to describe an address range\nand it is a multiline text.",
                          c.get_comment_at(0x0030))
         self.assertTrue(c.is_multiline(0x0030))
         self.assertEqual(0x0040, c.end_address_for_comment_at(0x0030))
@@ -143,7 +143,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         for line in s:
             c.feed(line)
 
-        self.assertEqual("This is a first comment and it's multiline.", c.get_comment_at(0x0030))
+        self.assertEqual("This is a first comment\nand it's multiline.", c.get_comment_at(0x0030))
         self.assertEqual("This is a single line comment.", c.get_comment_at(0x0040))
 
 

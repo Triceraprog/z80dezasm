@@ -60,7 +60,7 @@ class NewCommentParser:
 
     def __agglomerate_text(self, new_text):
         self.text_accumulator.append(new_text)
-        return " ".join(self.text_accumulator)
+        return "\n".join(self.text_accumulator)
 
     def feed(self, line: str):
         starts_with_address, address = get_starting_address(line)
@@ -116,6 +116,21 @@ class NewCommentParser:
 
     def end_address_for_comment_at(self, addr: int):
         return self.end_address.get(addr)
+
+
+def read_new_comment_file(opened_file):
+    c = NewCommentParser()
+    for line_from_file in opened_file:
+        c.feed(line_from_file)
+
+    user_comments = [(address, 'above', text.split('\n')) for address, text in c.descriptions.items()]
+    user_comments.extend([(address, 'right', text.split('\n')) for address, text in c.texts.items()])
+
+    user_labels = list(c.labels.items())
+
+    user_entries = [(address, 'code') for (address, directive) in c.directives.items() if 'CODE' in directive]
+
+    return user_comments, user_labels, user_entries
 
 
 if __name__ == '__main__':
