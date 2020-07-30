@@ -1,5 +1,3 @@
-import unittest
-
 HEXADECIMAL_MARKER = '$'
 
 
@@ -32,6 +30,9 @@ COMMENT_TYPE_ERROR = "ERROR"
 
 def get_type_and_content(s: str):
     """ Gets a stripped comment string and returns it's type and it's extracted content. """
+    if len(s) == 0:
+        return COMMENT_TYPE_TEXT, ""
+
     assert (len(s) > 0 and not s[0].isspace())
 
     if s[0] == '[':
@@ -118,4 +119,7 @@ class NewCommentParser:
 
 
 if __name__ == '__main__':
-    unittest.main()
+    with open('new_comments.txt', encoding="UTF-8") as f:
+        c = NewCommentParser()
+        for line_from_file in f:
+            c.feed(line_from_file)

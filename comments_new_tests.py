@@ -145,3 +145,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
 
         self.assertEqual("This is a first comment and it's multiline.", c.get_comment_at(0x0030))
         self.assertEqual("This is a single line comment.", c.get_comment_at(0x0040))
+
+
+if __name__ == '__main__':
+    unittest.main()

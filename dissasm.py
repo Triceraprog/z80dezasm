@@ -186,10 +186,7 @@ def dump_undefined_labels(rom):
             print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
 
 
-def main():
-    hex_prefix = "$"
-    options = {"hex_prefix": hex_prefix}
-
+def load_rom_with_comments():
     with open("comments.txt") as commentsFile:
         user_comments, user_labels, user_entries = read_comment_file(commentsFile)
 
@@ -225,6 +222,15 @@ def main():
     #     output = "${:0>4x}-${:0>4x} {}".format(begin, end, t)
     #     print(output)
     # exit()
+
+    return rom, rom_content, starting_addresses
+
+
+def main():
+    hex_prefix = "$"
+    options = {"hex_prefix": hex_prefix}
+
+    rom, rom_content, _ = load_rom_with_comments()
 
     for content in rom.get_content(0, len(rom_content) + 1):
         address, region_type, data = content
