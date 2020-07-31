@@ -1,5 +1,6 @@
 import functools
 import itertools
+from collections import defaultdict
 
 
 class Rom:
@@ -8,7 +9,9 @@ class Rom:
         self.ranges = []
         self.content = {}
         self.labels = {}
-        self.comments = {}
+        self.comments = defaultdict(list)
+        self.descriptions = defaultdict(list)
+        self.directives = defaultdict(list)
 
     def get_type(self, address):
         r = self.__find_range(address)
@@ -63,12 +66,22 @@ class Rom:
         self.__split_content_at(address)
 
     def add_comment(self, address, tag, comment):
-        comments = self.comments.get(address, list())
-        comments.append((tag, comment))
-        self.comments[address] = comments
+        self.comments[address].append((tag, comment))
 
     def get_comments_at(self, address):
         return self.comments.get(address, set())
+
+    def add_description(self, address, comment):
+        self.descriptions[address].append(comment)
+
+    def get_description_at(self, address):
+        return self.descriptions.get(address, set())
+
+    def add_directive(self, address, directive):
+        self.directives[address].append(directive)
+
+    def get_directives_at(self, address):
+        return self.directives.get(address, set())
 
     def __split_content_at(self, address):
         if self.get_type(address) != 'data':
@@ -96,7 +109,7 @@ class Rom:
         del self.content[content_address]
 
         self.add_content(address, data[:adjusted_length])
-        self.add_content(address+adjusted_length, data[adjusted_length:])
+        self.add_content(address + adjusted_length, data[adjusted_length:])
 
     def __mark_range(self, begin, end, range_type):
         """ begin is inclusive, end is exclusive, to be coherent with range()"""

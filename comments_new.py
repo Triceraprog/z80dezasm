@@ -117,11 +117,21 @@ class NewCommentParser:
     def end_address_for_comment_at(self, addr: int):
         return self.end_address.get(addr)
 
+    def all_labels(self):
+        return self.labels.items()
 
-def read_new_comment_file(opened_file):
-    c = NewCommentParser()
-    for line_from_file in opened_file:
-        c.feed(line_from_file)
+    def all_texts(self):
+        return self.texts.items()
+
+    def all_directives(self):
+        return self.directives.items()
+
+    def all_descriptions(self):
+        return self.descriptions.items()
+
+
+def read_new_comment_file_adapter(opened_file):
+    c = read_new_comment_file(opened_file)
 
     user_comments = [(address, 'above', text.split('\n')) for address, text in c.descriptions.items()]
     user_comments.extend([(address, 'right', text.split('\n')) for address, text in c.texts.items()])
@@ -133,8 +143,9 @@ def read_new_comment_file(opened_file):
     return user_comments, user_labels, user_entries
 
 
-if __name__ == '__main__':
-    with open('new_comments.txt', encoding="UTF-8") as f:
-        c = NewCommentParser()
-        for line_from_file in f:
-            c.feed(line_from_file)
+def read_new_comment_file(opened_file):
+    c = NewCommentParser()
+    for line_from_file in opened_file:
+        c.feed(line_from_file)
+
+    return c

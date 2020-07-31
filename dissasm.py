@@ -1,5 +1,4 @@
 from analysis import analysis
-from comments import read_comment_file
 from comments_new import read_new_comment_file
 from rom import Rom
 from z80opcode_strings import decoded_to_string, inject_label_on_call, P_CONDITION
@@ -39,17 +38,15 @@ def create_online_comment(comments, label_references):
     return adjusted_comments
 
 
-def write_comments_above(comments):
-    above_comments = [content for tag, content in comments if tag == 'above']
+def format_description(descriptions):
+    result = []
+    if descriptions:
+        result.append(";")
+        for desc in descriptions:
+            result.extend(["; " + line.strip() for line in desc])
+        result.append(";")
 
-    if above_comments:
-        print(";")
-
-        for content in above_comments:
-            for line in content:
-                print("; " + line.strip())
-
-        print(";")
+    return result
 
 
 def write_comments_below(rom, address, comments, options):
@@ -89,14 +86,20 @@ def format_comments(list_of_comments, width):
     return formatted_comments
 
 
+def print_common(rom, address):
+    description = format_description(rom.get_description_at(address))
+    if description:
+        print("\n".join(description))
+
+
 def print_code(rom, address, data, options):
+    print_common(rom, address)
+
     hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
     comments = rom.get_comments_at(address)
 
     decoded_size = data[-1]
-
-    write_comments_above(comments)
 
     byte_string = memory_to_byte_list(rom.memory[address:address + decoded_size])
     decoded = inject_label_on_call(rom.labels, data[:-1])
@@ -156,6 +159,8 @@ def print_data_line(data, size, comment, label, hex_prefix):
 
 
 def print_data(rom, address, data, options):
+    print_common(rom, address)
+
     hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
     comments = rom.get_comments_at(address)
@@ -185,34 +190,34 @@ def dump_undefined_labels(rom):
             print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
 
 
-def read_old_comments():
-    with open("comments.txt") as commentsFile:
-        return read_comment_file(commentsFile)
-
-
 def read_new_comments():
     with open("new_comments.txt") as commentsFile:
         return read_new_comment_file(commentsFile)
 
 
 def load_rom_with_comments():
-    user_comments, user_labels, user_entries = read_new_comments()
+    comments = read_new_comments()
 
     with open("vg5000_1.1.rom", "rb") as rom_file:
         rom_raw_content = rom_file.read()
 
-    starting_addresses = get_starting_addresses(user_entries)
+    starting_addresses = get_starting_addresses(comments.all_directives())
 
     rom = Rom(rom_raw_content)
     rom = analysis(rom, starting_addresses)
 
-    for label in user_labels:
-        address, name = label
-        rom.name_label(address, name)
+    for address, label in comments.all_labels():
+        rom.name_label(address, label)
 
-    for comment in user_comments:
-        address, tag, lines = comment
-        rom.add_comment(address, tag, lines)
+    for address, comment in comments.all_texts():
+        rom.add_comment(address, "right", comment.split("\n"))
+
+    for address, comment in comments.all_descriptions():
+        rom.add_description(address, comment.split("\n"))
+
+    for address, directives in comments.all_directives():
+        for directive in directives:
+            rom.add_directive(address, directive)
 
     # for r in sorted(rom.ranges):
     #     (begin, end), t = r
@@ -223,14 +228,14 @@ def load_rom_with_comments():
     return rom, rom_raw_content, starting_addresses
 
 
-def get_starting_addresses(user_entries):
+def get_starting_addresses(directives):
     starting_addresses = [0x0000]
     # Adding RST addresses
     for rst in range(1, 8):
         starting_addresses.append(rst * 8)
-    for entry, tag in user_entries:
-        if tag == "code":
-            starting_addresses.append(entry)
+    for address, directives in directives:
+        if "CODE" in directives:
+            starting_addresses.append(address)
     return starting_addresses
 
 

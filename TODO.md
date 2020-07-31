@@ -13,3 +13,5 @@
 - More compact format for one line comments on the right
 - Can add comments on def'd addresses
 - State difference between beeing called and being jumped in
+- Turn parameter to CHAR when the directive is set
+- Honor the multi-line comments

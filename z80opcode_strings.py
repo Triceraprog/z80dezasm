@@ -206,13 +206,13 @@ def inject_label_on_call(labels, decoded):
     mnemonic, p1, v1, p2, v2 = decoded
 
     new_v1 = v1
-    if p1 == P_IMMEDIATE_16 or p1 == P_IMMEDIATE_16_INDIRECT:
+    if p1 is P_IMMEDIATE_16 or p1 is P_IMMEDIATE_16_INDIRECT:
         if mnemonic in ('JP', 'JR', 'CALL', 'RST') or v1 != 0:
             new_v1 = labels.get(v1, (v1, []))
             new_v1, _ = new_v1
 
     new_v2 = v2
-    if p2 == P_IMMEDIATE_16 or p2 == P_IMMEDIATE_16_INDIRECT:
+    if p2 is P_IMMEDIATE_16 or p2 is P_IMMEDIATE_16_INDIRECT:
         if mnemonic in ('JP', 'JR', 'CALL', 'RST') or v2 != 0:
             new_v2 = labels.get(v2, (v2, []))
             new_v2, _ = new_v2
