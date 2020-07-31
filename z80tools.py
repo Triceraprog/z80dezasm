@@ -5,7 +5,7 @@ from two_complement import two_complement_to_signed
 # xxyyyzzz
 #   ppq
 
-def split_opcode(opcode):
+def split_opcode_in_parts(opcode):
     x = (0xC0 & opcode) >> 6
     y = (0x38 & opcode) >> 3
     z = (0x07 & opcode) >> 0
@@ -19,11 +19,11 @@ def split_opcode(opcode):
 class OpCodeTestCase(unittest.TestCase):
     def test_opcode_nop_splits_to_all_0(self):
         expect = (0, 0, 0, 0, 0)
-        self.assertEqual(expect, split_opcode(0x00))
+        self.assertEqual(expect, split_opcode_in_parts(0x00))
 
     def test_opcode_ret_split(self):
         expect = (3, 1, 1, 0, 1)
-        self.assertEqual(expect, split_opcode(0xC9))
+        self.assertEqual(expect, split_opcode_in_parts(0xC9))
 
 
 P_IMMEDIATE_8 = "P_IMM_8"
@@ -75,14 +75,14 @@ class NotEnoughMemoryOnDecode(BaseException):
     pass
 
 
-def displacement_decode(splitted_opcode, memory):
+def displacement_decode(split_opcode, memory):
     if len(memory) < 1:
         raise NotEnoughMemoryOnDecode()
 
     return (P_DISPLACEMENT, two_complement_to_signed(memory[0], 8)), 1
 
 
-def immediate_8_decode(splitted_opcode, memory):
+def immediate_8_decode(split_opcode, memory):
     if len(memory) < 1:
         raise NotEnoughMemoryOnDecode()
 
@@ -90,12 +90,12 @@ def immediate_8_decode(splitted_opcode, memory):
     return (P_IMMEDIATE_8, operand_8bits), 1
 
 
-def immediate_8_indirect_decode(splitted_opcode, memory):
-    param, size = immediate_8_decode(splitted_opcode, memory)
+def immediate_8_indirect_decode(split_opcode, memory):
+    param, size = immediate_8_decode(split_opcode, memory)
     return (P_IMMEDIATE_8_INDIRECT, param[1]), size
 
 
-def immediate_16_decode(splitted_opcode, memory):
+def immediate_16_decode(split_opcode, memory):
     if len(memory) < 2:
         raise NotEnoughMemoryOnDecode()
 
@@ -103,67 +103,67 @@ def immediate_16_decode(splitted_opcode, memory):
     return (P_IMMEDIATE_16, operand_16bits), 2
 
 
-def immediate_16_indirect_decode(splitted_opcode, memory):
-    param, size = immediate_16_decode(splitted_opcode, memory)
+def immediate_16_indirect_decode(split_opcode, memory):
+    param, size = immediate_16_decode(split_opcode, memory)
     return (P_IMMEDIATE_16_INDIRECT, param[1]), size
 
 
 def register(register_name):
     param_type = P_REGISTER_PAIR if register_name.endswith("_P") else P_REGISTER
 
-    return lambda splitted_opcode, memory: ((param_type, register_name), 0)
+    return lambda split_opcode, memory: ((param_type, register_name), 0)
 
 
 def register_pair_indirect(register_name):
-    return lambda splitted_opcode, memory: ((P_REGISTER_PAIR_INDIRECT, register_name), 0)
+    return lambda split_opcode, memory: ((P_REGISTER_PAIR_INDIRECT, register_name), 0)
 
 
-def register_pair_from_p(splitted_opcode, memory):
-    _, _, _, p, _ = splitted_opcode
+def register_pair_from_p(split_opcode, memory):
+    _, _, _, p, _ = split_opcode
     return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_SP[p]), 0
 
 
-def register_pair_alt_from_p(splitted_opcode, memory):
-    _, _, _, p, _ = splitted_opcode
+def register_pair_alt_from_p(split_opcode, memory):
+    _, _, _, p, _ = split_opcode
     return (P_REGISTER_PAIR, REGISTER_PAIRS_WITH_AF[p]), 0
 
 
-def register_from_y(splitted_opcode, memory):
-    _, y, _, _, _ = splitted_opcode
+def register_from_y(split_opcode, memory):
+    _, y, _, _, _ = split_opcode
     return (P_REGISTER, REGISTERS[y]), 0
 
 
-def register_from_z(splitted_opcode, memory):
-    _, _, z, _, _ = splitted_opcode
+def register_from_z(split_opcode, memory):
+    _, _, z, _, _ = split_opcode
     return (P_REGISTER, REGISTERS[z]), 0
 
 
-def address_from_y(splitted_opcode, memory):
-    _, y, _, _, _ = splitted_opcode
+def address_from_y(split_opcode, memory):
+    _, y, _, _, _ = split_opcode
     return (P_IMMEDIATE_16, y * 8), 0
 
 
-def constant_from_y(splitted_opcode, memory):
-    _, y, _, _, _ = splitted_opcode
+def constant_from_y(split_opcode, memory):
+    _, y, _, _, _ = split_opcode
     return (P_IMMEDIATE_8, y), 0
 
 
-def im_from_y(splitted_opcode, memory):
-    _, y, _, _, _ = splitted_opcode
+def im_from_y(split_opcode, memory):
+    _, y, _, _, _ = split_opcode
     # Second 0 case is to be checked
     im = [0, 0, 1, 2, 0, 0, 1, 2]
     return (P_IMMEDIATE_8, im[y]), 0
 
 
 def constant_8bits(value):
-    return lambda splitted_opcode, memory: ((P_IMMEDIATE_8, value), 0)
+    return lambda split_opcode, memory: ((P_IMMEDIATE_8, value), 0)
 
 
 ALU_MNEMONICS = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
 
 
-def alu_opcode_from_y(splitted_opcode):
-    _, y, _, _, _ = splitted_opcode
+def alu_opcode_from_y(split_opcode):
+    _, y, _, _, _ = split_opcode
     return ALU_MNEMONICS[y]
 
 
@@ -175,8 +175,8 @@ BLOCK_MNEMONICS = [
 ]
 
 
-def block_opcode_from_yz(splitted_opcode):
-    _, y, z, _, _ = splitted_opcode
+def block_opcode_from_yz(split_opcode):
+    _, y, z, _, _ = split_opcode
     y -= 4
     return BLOCK_MNEMONICS[y][z]
 
@@ -184,14 +184,14 @@ def block_opcode_from_yz(splitted_opcode):
 SHIFT_ROT_MNEMONICS = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", "SLL", "SRL"]
 
 
-def rot_shift_opcode_from_y(splitted_opcode):
-    _, y, _, _, _ = splitted_opcode
+def rot_shift_opcode_from_y(split_opcode):
+    _, y, _, _, _ = split_opcode
     return SHIFT_ROT_MNEMONICS[y]
 
 
 def condition_register(register_shift=0):
-    def decode_direct_register(splitted_opcode, memory):
-        _, y, _, _, _ = splitted_opcode
+    def decode_direct_register(split_opcode, memory):
+        _, y, _, _, _ = split_opcode
         shifted_register = y + register_shift
         return (P_CONDITION, COND_REGISTERS_TABLE[shifted_register]), 0
 
@@ -204,31 +204,31 @@ def register_fix_for_dd_and_fd_prefix(decoded, memory, prefix):
 
     substitute = REG_IX if prefix == 0xDD else REG_IY
 
-    if p1 == P_REGISTER and v1 == REG_AT_HL:
-        if p2 == None or (p2 == P_REGISTER and v2 == REG_A):
-            (_, disp), _ = displacement_decode(None, memory[0:])
-            result = mnemonic, P_REGISTER_INDEXED, (substitute, disp), p2, v2, size + 2
-        elif p2 == P_IMMEDIATE_8:
-            (_, disp), _ = displacement_decode(None, memory[0:])
+    if p1 is P_REGISTER and v1 is REG_AT_HL:
+        if p2 is None or (p2 is P_REGISTER and v2 is REG_A):
+            (_, displacement), _ = displacement_decode(None, memory[0:])
+            result = mnemonic, P_REGISTER_INDEXED, (substitute, displacement), p2, v2, size + 2
+        elif p2 is P_IMMEDIATE_8:
+            (_, displacement), _ = displacement_decode(None, memory[0:])
             (_, value), _ = immediate_8_decode(None, memory[1:])
-            result = mnemonic, P_REGISTER_INDEXED, (substitute, disp), p2, value, size + 2
+            result = mnemonic, P_REGISTER_INDEXED, (substitute, displacement), p2, value, size + 2
 
-    elif p2 == P_REGISTER and v2 == REG_AT_HL:
-        if p1 == P_REGISTER or p1 == P_IMMEDIATE_8:
+    elif p2 is P_REGISTER and v2 is REG_AT_HL:
+        if p1 is P_REGISTER or p1 is P_IMMEDIATE_8:
             (p, value), p_size = displacement_decode(None, memory[0:])
             result = mnemonic, p1, v1, P_REGISTER_INDEXED, (substitute, value), size + p_size + 1
 
     elif (mnemonic == "EX" and
-                  p1 == P_REGISTER_PAIR and v1 == REG_DE and
-                  p2 == P_REGISTER_PAIR and v2 == REG_HL):
+                  p1 is P_REGISTER_PAIR and v1 is REG_DE and
+                  p2 is P_REGISTER_PAIR and v2 is REG_HL):
         return decoded
 
-    elif p1 == P_REGISTER_PAIR and v1 == REG_HL:
-        if p2 == None or p2 == P_IMMEDIATE_16:
+    elif p1 is P_REGISTER_PAIR and v1 is REG_HL:
+        if p2 is None or p2 == P_IMMEDIATE_16:
             result = mnemonic, p1, substitute, p2, v2, size + 1
 
-    elif p2 == P_REGISTER_PAIR and v2 == REG_HL:
-        if p1 == None:
+    elif p2 is P_REGISTER_PAIR and v2 is REG_HL:
+        if p1 is None:
             result = mnemonic, p1, v1, p2, substitute, size + 1
 
     return result or ("DD/FD PREFIX TODO", None, None, None, None, 1)
@@ -366,11 +366,11 @@ def decode_full(memory):
                 or
                 (len(opcode_ref_key) == 4) and match_pq(opcode_ref_key, opcode_key))
 
-    def decode_parameter(function, splitted_opcode, memory):
-        return ((None, None), 0) if function is None else function(splitted_opcode, memory)
+    def decode_parameter(function, split_opcode, memory):
+        return ((None, None), 0) if function is None else function(split_opcode, memory)
 
     if len(memory) < 1:
-        return ("NOT ENOUGH MEMORY TO DECODE ANYTHING", None, None, None, None, 0)
+        return "NOT ENOUGH MEMORY TO DECODE ANYTHING", None, None, None, None, 0
 
     opcode = memory[0]
     current_table = table
@@ -379,12 +379,12 @@ def decode_full(memory):
 
     if opcode == 0xDD or opcode == 0xFD:
         if len(memory) < 2:
-            return ("NOT ENOUGH MEMORY TO DECODE WITH DD PREFIX", None, None, None, None, 0)
+            return "NOT ENOUGH MEMORY TO DECODE WITH DD PREFIX", None, None, None, None, 0
         prefix = opcode
         memory = memory[1:]
         opcode = memory[0]
         if opcode in (0xDD, 0xED, 0xFD):
-            return ("NONI", None, None, None, None, 1)
+            return "NONI", None, None, None, None, 1
         elif opcode == 0xCB:
             # Tweaking memory to put the displacement after the opcode byte
             # and let the 0xCB prefix act
@@ -407,23 +407,23 @@ def decode_full(memory):
         opcode = memory[0]
         prefix_size = 1
 
-    splitted_opcode = split_opcode(opcode)
-    x, y, z, p, q = splitted_opcode
-    splitted_opcode_2 = x, z, y, q, p
+    split_opcode = split_opcode_in_parts(opcode)
+    x, y, z, p, q = split_opcode
+    split_opcode_2 = x, z, y, q, p
     mnemonic = "(not yet found)"
 
     try:
         for entry in current_table:
             opcode_key = entry[0]
-            if match_xz(opcode_key, splitted_opcode_2):
-                if match(opcode_key, splitted_opcode_2):
+            if match_xz(opcode_key, split_opcode_2):
+                if match(opcode_key, split_opcode_2):
                     mnemonic = entry[1]
                     if not isinstance(mnemonic, str):
-                        mnemonic = mnemonic(splitted_opcode)
+                        mnemonic = mnemonic(split_opcode)
 
-                    param_1 = decode_parameter(entry[2], splitted_opcode, memory[1:])
+                    param_1 = decode_parameter(entry[2], split_opcode, memory[1:])
                     param_1, size_1 = param_1
-                    param_2 = decode_parameter(entry[3], splitted_opcode, memory[1:])
+                    param_2 = decode_parameter(entry[3], split_opcode, memory[1:])
                     param_2, size_2 = param_2
 
                     decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2 + prefix_size,)
@@ -432,9 +432,9 @@ def decode_full(memory):
                     return decoded_instruction
 
     except NotEnoughMemoryOnDecode:
-        return ("NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None, 0)
+        return "NOT ENOUGH MEMORY TO DECODE " + mnemonic, None, None, None, None, 0
 
-    return ("DECODE ERROR", None, None, None, None, 0)
+    return "DECODE ERROR", None, None, None, None, 0
 
 
 def decode(memory):

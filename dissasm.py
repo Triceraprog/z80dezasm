@@ -1,5 +1,4 @@
-from analysis import mark_all_code_regions, mark_all_data_regions, \
-    detect_partial_instructions, inject_instructions_on_missing_labels
+from analysis import analysis
 from comments import read_comment_file
 from comments_new import read_new_comment_file
 from rom import Rom
@@ -17,10 +16,9 @@ def get_label_and_x_ref(label, hex_prefix):
     label_references = ""
     if label:
         label_name, label_references = label
-        label_name += ":"
-        label_name = label_name.lower()
+        label_name = label_name.lower() + ":"
         if label_references:
-            label_references = "called from: " + ", ".join([hex_prefix + "{:>04x}".format(a) for a in label_references])
+            label_references = "called from: " + ", ".join([hex_prefix + f"{a:>04x}" for a in label_references])
 
     return label_name, label_references
 
@@ -198,27 +196,15 @@ def read_new_comments():
 
 
 def load_rom_with_comments():
-    # user_comments, user_labels, user_entries = read_old_comments()
     user_comments, user_labels, user_entries = read_new_comments()
 
-    with open("vg5000_1.1.rom", "rb") as romFile:
-        rom_content = romFile.read()
+    with open("vg5000_1.1.rom", "rb") as rom_file:
+        rom_raw_content = rom_file.read()
 
-    starting_addresses = [0x0000]
+    starting_addresses = get_starting_addresses(user_entries)
 
-    # Adding RST addresses
-    for rst in range(1, 8):
-        starting_addresses.append(rst * 8)
-
-    for entry, tag in user_entries:
-        if tag == "code":
-            starting_addresses.append(entry)
-
-    rom = Rom(rom_content)
-    rom = mark_all_code_regions(rom, starting_addresses)
-    rom = mark_all_data_regions(rom)
-    rom = inject_instructions_on_missing_labels(rom)
-    rom = detect_partial_instructions(rom)
+    rom = Rom(rom_raw_content)
+    rom = analysis(rom, starting_addresses)
 
     for label in user_labels:
         address, name = label
@@ -234,7 +220,18 @@ def load_rom_with_comments():
     #     print(output)
     # exit()
 
-    return rom, rom_content, starting_addresses
+    return rom, rom_raw_content, starting_addresses
+
+
+def get_starting_addresses(user_entries):
+    starting_addresses = [0x0000]
+    # Adding RST addresses
+    for rst in range(1, 8):
+        starting_addresses.append(rst * 8)
+    for entry, tag in user_entries:
+        if tag == "code":
+            starting_addresses.append(entry)
+    return starting_addresses
 
 
 def main():

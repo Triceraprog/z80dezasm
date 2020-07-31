@@ -45,7 +45,7 @@ def collect_address_references(instructions):
     references = []
     for pc, instruction in instructions:
         mnemonic, p1, v1, p2, v2, size = instruction
-        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 == P_IMMEDIATE_16:
+        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 is P_IMMEDIATE_16:
             references.append(v2)
 
     return references
@@ -55,7 +55,7 @@ def create_labels_with_callers(instructions):
     labels = {}
     for pc, instruction in instructions:
         mnemonic, p1, v1, p2, v2, size = instruction
-        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 == P_IMMEDIATE_16:
+        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 is P_IMMEDIATE_16:
             base_name = {"JP": "jump", "JR": "loop", "DJNZ": "loop", "CALL": "call", "RST": "rst"}[mnemonic]
 
             if base_name == "loop" and v2 > pc:
@@ -200,6 +200,15 @@ def detect_partial_instructions(rom):
         address, comment = comment
         rom.add_comment(address, 'online', 'partial instruction trick')
         rom.add_comment(address, 'partial-instruction', comment)
+
+    return rom
+
+
+def analysis(rom, starting_addresses):
+    rom = mark_all_code_regions(rom, starting_addresses)
+    rom = mark_all_data_regions(rom)
+    rom = inject_instructions_on_missing_labels(rom)
+    rom = detect_partial_instructions(rom)
 
     return rom
 

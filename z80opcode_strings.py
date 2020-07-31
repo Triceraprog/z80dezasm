@@ -4,20 +4,20 @@ from z80tools import *
 def get_param_str(param, value, options):
     hex_prefix = options.get("hex_prefix", "0x")
 
-    if param == P_REGISTER_PAIR:
-        if value == REG_AF_PRIME:
+    if param is P_REGISTER_PAIR:
+        if value is REG_AF_PRIME:
             return "AF'"
         else:
             return value[2:4]
 
-    if param == P_REGISTER_PAIR_INDIRECT:
-        if value == REG_AF_PRIME:
+    if param is P_REGISTER_PAIR_INDIRECT:
+        if value is REG_AF_PRIME:
             return "(AF')"
         else:
             return "(%s)" % value[2:4]
 
-    if param == P_REGISTER:
-        if value == REG_AT_HL:
+    if param is P_REGISTER:
+        if value is REG_AT_HL:
             return "(HL)"
         else:
             return value[2:]
@@ -46,7 +46,7 @@ def get_param_str(param, value, options):
     if param == P_DISPLACEMENT:
         return str(value)
 
-    if param == P_REGISTER_INDEXED:
+    if param is P_REGISTER_INDEXED:
         register_pair, displacement = value
         sign = "+" if displacement >= 0 else "-"
         displacement = abs(displacement)
