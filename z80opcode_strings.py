@@ -3,6 +3,7 @@ from z80tools import *
 
 def get_param_str(param, value, options):
     hex_prefix = options.get("hex_prefix", "0x")
+    as_char = options.get("as_char", False)
 
     if param is P_REGISTER_PAIR:
         if value is REG_AF_PRIME:
@@ -35,7 +36,10 @@ def get_param_str(param, value, options):
             return "(" + value + ")"
 
     if param == P_IMMEDIATE_8:
-        return hex_prefix + "%02X" % value
+        if as_char:
+            return "'" + chr(value) + "'"
+        else:
+            return hex_prefix + "%02X" % value
 
     if param == P_IMMEDIATE_8_INDIRECT:
         return "(" + hex_prefix + "%02X)" % value
@@ -150,6 +154,13 @@ class FromDecodedToStringTestCase(unittest.TestCase):
         expected = ('CP', 'A,0x3A')
 
         output = decoded_to_string(decoded)
+        self.assertEqual(expected, output)
+
+    def test_immediate_8_as_char(self):
+        decoded = ('CP', P_REGISTER, REG_A, P_IMMEDIATE_8, 0x20)
+        expected = ('CP', "A,' '")
+
+        output = decoded_to_string(decoded, {"as_char": True})
         self.assertEqual(expected, output)
 
     def test_immediate_8_indirect(self):

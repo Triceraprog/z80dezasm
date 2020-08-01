@@ -101,6 +101,10 @@ def print_code(rom, address, data, options):
 
     decoded_size = data[-1]
 
+    if "CHAR" in rom.get_directives_at(address):
+        options = dict(options)
+        options.update({'as_char': True})
+
     byte_string = memory_to_byte_list(rom.memory[address:address + decoded_size])
     decoded = inject_label_on_call(rom.labels, data[:-1])
     string = decoded_to_string(decoded, options=options)
