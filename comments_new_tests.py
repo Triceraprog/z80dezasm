@@ -146,6 +146,18 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         self.assertEqual("This is a first comment\nand it's multiline.", c.get_comment_at(0x0030))
         self.assertEqual("This is a single line comment.", c.get_comment_at(0x0040))
 
+    def test_prunes_orphan_lines(self):
+        s = [r"$0030        This is a first comment",
+             r"",
+             r"$0040        The previous empty line must be ignored."]
+
+        c = NewCommentParser()
+        for line in s:
+            c.feed(line)
+
+        self.assertEqual("This is a first comment", c.get_comment_at(0x0030))
+        self.assertEqual("The previous empty line must be ignored.", c.get_comment_at(0x0040))
+
 
 if __name__ == '__main__':
     unittest.main()

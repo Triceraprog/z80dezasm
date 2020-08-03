@@ -5,7 +5,7 @@ def get_hexadecimal_from_string(s: str):
     """Gets a string representing a maximum 16 bit long hexadecimal number starting with a specific character.
      Returns the number as integer or throws ValueError. """
 
-    if s[0] != HEXADECIMAL_MARKER:
+    if len(s) > 0 and s[0] != HEXADECIMAL_MARKER:
         raise ValueError(f"Number should start with '{HEXADECIMAL_MARKER}' but starts with '{s[0]}'")
 
     return int(s[1:5], 16)
@@ -60,7 +60,7 @@ class NewCommentParser:
 
     def __agglomerate_text(self, new_text):
         self.text_accumulator.append(new_text)
-        return "\n".join(self.text_accumulator)
+        return "\n".join(self.text_accumulator).rstrip()
 
     def feed(self, line: str):
         starts_with_address, address = get_starting_address(line)
@@ -94,10 +94,12 @@ class NewCommentParser:
                 self.directives[self.current_address] = content
             else:
                 agglomerated_text = self.__agglomerate_text(content)
-                if self.current_type is COMMENT_TYPE_LABEL:
-                    self.descriptions[self.current_address] = agglomerated_text
-                else:
-                    self.texts[self.current_address] = agglomerated_text
+
+                if len(agglomerated_text) > 0:
+                    if self.current_type is COMMENT_TYPE_LABEL:
+                        self.descriptions[self.current_address] = agglomerated_text
+                    else:
+                        self.texts[self.current_address] = agglomerated_text
 
     def get_label_at(self, addr: int):
         return self.labels.get(addr)
