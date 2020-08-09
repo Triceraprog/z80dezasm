@@ -115,12 +115,20 @@ def print_code(rom, address, data, options):
     if comments_on_the_right:
         first_line_of_comments = comments_on_the_right[0]
 
+    # Preserve casing in char arguments
+    arguments = string[1]
+    if arguments.count("'") == 2 and arguments.count(",") == 1:
+        before_comma, after_comma = arguments.split(",")
+        arguments = before_comma.lower() + "," + after_comma
+    else:
+        arguments = arguments.lower()
+
     line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
         hex_prefix=options.get("hex_prefix", "0x"),
         pc=address,
         bytes=byte_string,
         mnemonic=string[0].lower(),
-        args=string[1].lower(),
+        args=arguments,
         comment=first_line_of_comments)
 
     labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
