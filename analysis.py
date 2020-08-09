@@ -198,7 +198,7 @@ def detect_partial_instructions(rom):
 
     for comment in comments:
         address, comment = comment
-        rom.add_comment(address, 'online', 'partial instruction trick')
+        # rom.add_comment(address, 'online', f'partial instruction trick')
         rom.add_comment(address, 'partial-instruction', comment)
 
     return rom

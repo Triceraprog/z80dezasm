@@ -49,12 +49,18 @@ def format_description(descriptions):
     return result
 
 
+def get_partial_read_as(rom, address, size, decoded, options):
+    byte_string = memory_to_byte_list(rom.memory[address:address + size])
+    partial_string = decoded_to_string(decoded, options=options)
+
+    return byte_string, partial_string
+
+
 def write_comments_below(rom, address, comments, options):
     for comment in comments:
         tag, content = comment
         if tag == 'partial-instruction':
-            byte_string = memory_to_byte_list(rom.memory[address:address + content[-1]])
-            partial_string = decoded_to_string(content[:-1], options=options)
+            byte_string, partial_string = get_partial_read_as(rom, address, content[-1], content[:-1], options)
             line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; <-- reads as".format(
                 hex_prefix=options.get("hex_prefix", "0x"),
                 pc=address,
@@ -111,6 +117,21 @@ def print_code(rom, address, data, options):
     comments_on_the_right = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=55)
 
+    partial_instruction = [c for c in comments if c[0] == 'partial-instruction']
+    partial_instruction_count = len(partial_instruction)
+    if partial_instruction_count >= 1:
+        assert (partial_instruction_count == 1)
+        _, content = partial_instruction[0]
+        byte_string, partial_string = get_partial_read_as(rom, address, content[-1], content[:-1], options)
+
+        comment = "As: {mnemonic:<6} {args:<10} ; {bytes:<10} ; Next: {hex_prefix}{pc:0>4x}".format(
+            hex_prefix=options.get("hex_prefix", "0x"),
+            bytes=byte_string,
+            mnemonic=partial_string[0].lower(),
+            args=partial_string[1].lower(),
+            pc=address+content[-1])
+        comments_on_the_right.append(comment)
+
     first_line_of_comments = ""
     if comments_on_the_right:
         first_line_of_comments = comments_on_the_right[0]
@@ -141,7 +162,8 @@ def print_code(rom, address, data, options):
             print(comment_next_line)
             comments_on_the_right = comments_on_the_right[1:]
 
-    write_comments_below(rom, address, comments, options)
+    # Now included in comments on the right
+    # write_comments_below(rom, address, comments, options)
 
     if data[0] in ("RET", "RETI", "RETN") or (data[0] in ("JP", "JR") and data[1] != P_CONDITION):
         print()  # Blank line after return
