@@ -1,16 +1,16 @@
 import unittest
 
+from rom import Rom
 from z80tools import decode_full, \
     P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ, P_REGISTER_PAIR, \
     REG_HL, REG_BC, P_IMMEDIATE_8
-from rom import Rom
 
 
 def is_unconditional_jump(fully_decoded):
     mnemonic, p1, v1, p2, v2, size = fully_decoded
-    return ((mnemonic in ("JP", "JR") and p1 is None and (p2 == P_IMMEDIATE_16 or p2 == P_DISPLACEMENT))
-            or
-            (mnemonic in ("RET", "RETI", "RETN") and p1 is None and p2 is None))
+    return ((mnemonic in ("JP", "JR") and p1 is None and (
+            p2 == P_IMMEDIATE_16 or p2 == P_DISPLACEMENT or p2 == P_REGISTER_PAIR))
+            or (mnemonic in ("RET", "RETI", "RETN") and p1 is None and p2 is None))
 
 
 def find_next_unconditional_jump(memory, start):
