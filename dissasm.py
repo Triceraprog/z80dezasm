@@ -111,8 +111,17 @@ def print_code(rom, address, data, options):
         options = dict(options)
         options.update({'as_char': True})
 
+    if "NOT_LABEL" in rom.get_directives_at(address):
+        options = dict(options)
+        options.update({'not_label': True})
+
     byte_string = memory_to_byte_list(rom.memory[address:address + decoded_size])
-    decoded = inject_label_on_call(rom.labels, data[:-1])
+
+    if not options.get("not_label", False):
+        decoded = inject_label_on_call(rom.labels, data[:-1])
+    else:
+        decoded = data[:-1]
+
     string = decoded_to_string(decoded, options=options)
     comments_on_the_right = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=55)
@@ -129,7 +138,7 @@ def print_code(rom, address, data, options):
             bytes=byte_string,
             mnemonic=partial_string[0].lower(),
             args=partial_string[1].lower(),
-            pc=address+content[-1])
+            pc=address + content[-1])
         comments_on_the_right.append(comment)
 
     first_line_of_comments = ""
