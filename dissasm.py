@@ -242,10 +242,10 @@ def read_new_comments():
         return read_new_comment_file(commentsFile)
 
 
-def load_rom_with_comments():
+def load_rom_with_comments(rom_filename):
     comments = read_new_comments()
 
-    with open("vg5000_1.1.rom", "rb") as rom_file:
+    with open(rom_filename, "rb") as rom_file:
         rom_raw_content = rom_file.read()
 
     data_skip_ranges = get_data_skip_ranges(comments.all_directives())
@@ -315,10 +315,18 @@ def get_data_skip_ranges(directives):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--romfile', type=str)
+
+    args = parser.parse_args()
+
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
 
-    rom, rom_content, _ = load_rom_with_comments()
+    rom_filename = args.romfile
+
+    rom, rom_content, _ = load_rom_with_comments(rom_filename)
 
     for content in rom.get_content(0, len(rom_content) + 1):
         address, region_type, data = content
