@@ -5,7 +5,11 @@ from z80opcode_strings import decoded_to_string, inject_label_on_call, P_CONDITI
 
 
 def memory_to_byte_list(memory, hex_prefix="", separator=" "):
-    byte_list = [(hex_prefix + "%02x") % x for x in memory]
+    try:
+        byte_list = [(hex_prefix + "%02x") % x for x in memory]
+    except TypeError:
+        print(f"Memory is not data : {memory}")
+        raise
     byte_string = separator.join(byte_list)
     return byte_string
 
