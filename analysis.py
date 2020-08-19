@@ -118,7 +118,10 @@ def find_next_data_region_address(rom, scan_start):
 
 def mark_all_code_regions(rom, starting_addresses):
     while len(starting_addresses) > 0:
-        starting_addresses = sorted(starting_addresses)
+        # Never sort the addresses, the process needs to first find
+        # all code paths before making new passes
+        # starting_addresses = sorted(starting_addresses) <-- This causes wrong paths.
+
         start = starting_addresses[0]
         starting_addresses = starting_addresses[1:]
 
