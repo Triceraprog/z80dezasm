@@ -276,7 +276,10 @@ def load_rom_with_comments():
     return rom, rom_raw_content, starting_addresses
 
 
-def get_starting_addresses(directives, data_skip_ranges=[]):
+def get_starting_addresses(directives, data_skip_ranges=None):
+    if data_skip_ranges is None:
+        data_skip_ranges = []
+
     starting_addresses = [0x0000]
     # Adding RST addresses
     for rst in range(1, 8):
