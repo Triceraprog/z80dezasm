@@ -314,17 +314,9 @@ def get_data_skip_ranges(directives):
     return data_ranges
 
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--romfile', type=str)
-
-    args = parser.parse_args()
-
+def main(rom_filename):
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix}
-
-    rom_filename = args.romfile
 
     rom, rom_content, _ = load_rom_with_comments(rom_filename)
 
@@ -340,4 +332,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--romfile', type=str)
+
+    args = parser.parse_args()
+
+    main(rom_filename=args.romfile)
