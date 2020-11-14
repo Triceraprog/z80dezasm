@@ -164,8 +164,7 @@ def print_code(rom: Rom, address, data, options):
         starting_comment_line = True
     if address == comment_end_address and len(comment_leftovers) <= 1:
         ending_comment_line = True
-    # if len(comment_leftovers) > 0:
-    if address < comment_end_address and not starting_comment_line and not ending_comment_line:
+    if address <= comment_end_address and not starting_comment_line and not ending_comment_line:
         continuing_comment_line = True
 
     comments_on_the_right.extend(comment_leftovers)
