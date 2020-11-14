@@ -133,7 +133,7 @@ def print_code(rom, address, data, options):
 
     string = decoded_to_string(decoded, options=options)
     comments_on_the_right = create_online_comment(comments, label_references)
-    comments_on_the_right = format_comments(comments_on_the_right, width=55)
+    comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
     partial_instruction = [c for c in comments if c[0] == 'partial-instruction']
     partial_instruction_count = len(partial_instruction)
@@ -223,7 +223,7 @@ def print_data(rom, address, data, options):
     data_per_line = 10
 
     comments_on_the_right = create_online_comment(comments, label_references)
-    comments_on_the_right = format_comments(comments_on_the_right, width=55)
+    comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
     while data:
         comment = "" if not comments_on_the_right else comments_on_the_right[0]
@@ -235,6 +235,12 @@ def print_data(rom, address, data, options):
 
         address += data_per_line
         data = data[data_per_line:]
+
+    while comments_on_the_right:
+        comment_next_line = (" " * 80) + "; " + comments_on_the_right[0]
+        print(comment_next_line)
+        comments_on_the_right = comments_on_the_right[1:]
+
 
 
 def dump_undefined_labels(rom):
