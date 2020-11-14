@@ -106,7 +106,12 @@ def print_code(rom, address, data, options):
     print_common(rom, address)
 
     hex_prefix = options.get("hex_prefix", "0x")
+
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
+
+    if not options.get("cross_ref", False):
+        label_references = []
+
     comments = rom.get_comments_at(address)
 
     decoded_size = data[-1]
@@ -210,6 +215,9 @@ def print_data(rom, address, data, options):
 
     hex_prefix = options.get("hex_prefix", "0x")
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
+    if not options.get("cross_ref", False):
+        label_references = []
+
     comments = rom.get_comments_at(address)
 
     data_per_line = 10
@@ -314,9 +322,10 @@ def get_data_skip_ranges(directives):
     return data_ranges
 
 
-def main(rom_filename):
+def main(rom_filename, cross_ref):
     hex_prefix = "$"
-    options = {"hex_prefix": hex_prefix}
+    options = {"hex_prefix": hex_prefix,
+               "cross_ref": cross_ref}
 
     rom, rom_content, _ = load_rom_with_comments(rom_filename)
 
@@ -336,7 +345,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--romfile', type=str)
+    parser.add_argument('--crossref', type=bool)
 
     args = parser.parse_args()
 
-    main(rom_filename=args.romfile)
+    main(rom_filename=args.romfile, cross_ref=args.crossref)
