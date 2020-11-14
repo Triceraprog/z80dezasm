@@ -3,6 +3,9 @@ from comments_new import read_new_comment_file
 from rom import Rom
 from z80opcode_strings import decoded_to_string, inject_label_on_call, P_CONDITION
 
+comment_leftovers = []
+comment_end_address = 0
+
 
 def memory_to_byte_list(memory, hex_prefix="", separator=" "):
     try:
@@ -28,7 +31,8 @@ def get_label_and_x_ref(label, hex_prefix):
 
 def create_online_comment(comments, label_references):
     comment_collection = [label_references] if label_references else []
-    online_comment = [c for c_type, c in comments if c_type == "online" or c_type == "right"]
+    online_comment = [c for c_type, c, end_address in comments if c_type == "online" or c_type == "right"]
+    end_address = max((end for c_type, _, end in comments if c_type == "online" or c_type == "right"), default=0)
     comment_collection.extend(online_comment)
 
     adjusted_comments = []
@@ -39,7 +43,7 @@ def create_online_comment(comments, label_references):
             for c in comment:
                 adjusted_comments.append(c.strip())
 
-    return adjusted_comments
+    return adjusted_comments, end_address
 
 
 def format_description(descriptions):
@@ -102,7 +106,9 @@ def print_common(rom, address):
         print("\n".join(description))
 
 
-def print_code(rom, address, data, options):
+def print_code(rom: Rom, address, data, options):
+    global comment_leftovers, comment_end_address
+
     print_common(rom, address)
 
     hex_prefix = options.get("hex_prefix", "0x")
@@ -132,14 +138,14 @@ def print_code(rom, address, data, options):
         decoded = data[:-1]
 
     string = decoded_to_string(decoded, options=options)
-    comments_on_the_right = create_online_comment(comments, label_references)
+    comments_on_the_right, end_address = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
     partial_instruction = [c for c in comments if c[0] == 'partial-instruction']
     partial_instruction_count = len(partial_instruction)
     if partial_instruction_count >= 1:
         assert (partial_instruction_count == 1)
-        _, content = partial_instruction[0]
+        _, content, end_address = partial_instruction[0]
         byte_string, partial_string = get_partial_read_as(rom, address, content[-1], content[:-1], options)
 
         comment = "As: {mnemonic:<6} {args:<10} ; {bytes:<10} ; Next: {hex_prefix}{pc:0>4x}".format(
@@ -150,9 +156,38 @@ def print_code(rom, address, data, options):
             pc=address + content[-1])
         comments_on_the_right.append(comment)
 
+    starting_comment_line = False
+    ending_comment_line = False
+    continuing_comment_line = False
+    if (len(comment_leftovers) == 0 and end_address != address and len(comments_on_the_right) > 0) or \
+        len(comments_on_the_right) > 1:
+        starting_comment_line = True
+    if address == comment_end_address and len(comment_leftovers) <= 1:
+        ending_comment_line = True
+    # if len(comment_leftovers) > 0:
+    if address < comment_end_address and not starting_comment_line and not ending_comment_line:
+        continuing_comment_line = True
+
+    comments_on_the_right.extend(comment_leftovers)
+
     first_line_of_comments = ""
     if comments_on_the_right:
         first_line_of_comments = comments_on_the_right[0]
+        if ending_comment_line:
+            first_line_of_comments = r"\ " + first_line_of_comments
+        elif continuing_comment_line:
+            first_line_of_comments = "| " + first_line_of_comments
+        elif starting_comment_line and not ending_comment_line:
+            first_line_of_comments = "/ " + first_line_of_comments
+        else:
+            first_line_of_comments = "  " + first_line_of_comments
+    else:
+        if continuing_comment_line:
+            first_line_of_comments = "| "
+        elif starting_comment_line:
+            first_line_of_comments = "/ "
+        elif ending_comment_line:
+            first_line_of_comments = r"\ "
 
     # Preserve casing in char arguments
     arguments = string[1]
@@ -173,12 +208,21 @@ def print_code(rom, address, data, options):
     labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
     print(labeled_line)
 
+    comment_end_address = end_address if end_address != 0 else comment_end_address
+
     if comments_on_the_right:
         comments_on_the_right = comments_on_the_right[1:]
-        while comments_on_the_right:
-            comment_next_line = (" " * 67) + "; " + comments_on_the_right[0]
-            print(comment_next_line)
-            comments_on_the_right = comments_on_the_right[1:]
+        if address == comment_end_address:
+            while comments_on_the_right:
+                continuation = "| " if len(comments_on_the_right) > 1 else "\ "
+                comment_next_line = (" " * 67) + "; " + continuation + comments_on_the_right[0]
+                print(comment_next_line)
+                comments_on_the_right = comments_on_the_right[1:]
+            comment_end_address = 0
+            comment_leftovers = []
+        else:
+            comment_leftovers = list(comments_on_the_right)
+            # comment_end_address = end_address if end_address != 0 else comment_end_address
 
     # Now included in comments on the right
     # write_comments_below(rom, address, comments, options)
@@ -222,7 +266,7 @@ def print_data(rom, address, data, options):
 
     data_per_line = 10
 
-    comments_on_the_right = create_online_comment(comments, label_references)
+    comments_on_the_right, end_address = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
     while data:
@@ -240,7 +284,6 @@ def print_data(rom, address, data, options):
         comment_next_line = (" " * 80) + "; " + comments_on_the_right[0]
         print(comment_next_line)
         comments_on_the_right = comments_on_the_right[1:]
-
 
 
 def dump_undefined_labels(rom):
@@ -272,7 +315,8 @@ def load_rom_with_comments(rom_filename):
         rom.name_label(address, label)
 
     for address, comment in comments.all_texts():
-        rom.add_comment(address, "right", comment.split("\n"))
+        end_address = comments.end_address_for_comment_at(address)
+        rom.add_comment(address, "right", comment.split("\n"), end_address)
 
     for address, comment in comments.all_descriptions():
         rom.add_description(address, comment.split("\n"))

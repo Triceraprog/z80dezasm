@@ -65,11 +65,11 @@ class Rom:
 
         self.__split_content_at(address)
 
-    def add_comment(self, address, tag, comment):
-        self.comments[address].append((tag, comment))
+    def add_comment(self, address, tag, comment, end_address):
+        self.comments[address].append((tag, comment, end_address))
 
     def get_comments_at(self, address):
-        return self.comments.get(address, set())
+        return self.comments.get(address, list())
 
     def add_description(self, address, comment):
         self.descriptions[address].append(comment)

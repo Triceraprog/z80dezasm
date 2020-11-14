@@ -117,7 +117,10 @@ class NewCommentParser:
         return addr in self.end_address
 
     def end_address_for_comment_at(self, addr: int):
-        return self.end_address.get(addr)
+        if self.is_multiline(addr):
+            return self.end_address.get(addr)
+        else:
+            return addr
 
     def all_labels(self):
         return self.labels.items()

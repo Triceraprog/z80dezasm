@@ -136,25 +136,25 @@ class RomTestCase(unittest.TestCase):
         comment3 = "This is a comment online"
 
         rom = Rom(RomTestCase.memory)
-        rom.add_comment(0x0000, 'after', comment1)
-        rom.add_comment(0x0000, 'before', comment2)
-        rom.add_comment(0x0001, 'online', comment3)
+        rom.add_comment(0x0000, 'after', comment1, 0x0000)
+        rom.add_comment(0x0000, 'before', comment2, 0x0000)
+        rom.add_comment(0x0001, 'online', comment3, 0x0001)
 
-        self.assertEqual(set(), rom.get_comments_at(0x0003))
+        self.assertEqual(list(), rom.get_comments_at(0x0003))
 
         result1 = rom.get_comments_at(0x0000)
-        self.assertEqual({('after', comment1), ('before', comment2)}, set(result1))
+        self.assertEqual({('after', comment1, 0x0000), ('before', comment2, 0x0000)}, set(result1))
 
         result2 = rom.get_comments_at(0x0001)
-        self.assertEqual({('online', comment3)}, set(result2))
+        self.assertEqual({('online', comment3, 0x0001)}, set(result2))
 
     def test_can_add_several_comments_with_the_same_tag(self):
         comment1 = "This is first comment online"
         comment2 = "This is second comment online"
 
         rom = Rom(RomTestCase.memory)
-        rom.add_comment(0x0000, 'right', comment1)
-        rom.add_comment(0x0000, 'right', comment2)
+        rom.add_comment(0x0000, 'right', comment1, 0x0000)
+        rom.add_comment(0x0000, 'right', comment2, 0x0000)
 
         comments = rom.get_comments_at(0x0000)
 
