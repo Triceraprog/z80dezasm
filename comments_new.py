@@ -138,6 +138,8 @@ class NewCommentParser:
 def read_new_comment_file(opened_file):
     c = NewCommentParser()
     for line_from_file in opened_file:
+        if line_from_file.startswith("STOP"):
+            break
         c.feed(line_from_file)
 
     return c

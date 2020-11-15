@@ -293,13 +293,13 @@ def dump_undefined_labels(rom):
             print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
 
 
-def read_new_comments():
-    with open("new_comments.txt") as commentsFile:
+def read_new_comments(comments_filename="new_comments.txt"):
+    with open(comments_filename) as commentsFile:
         return read_new_comment_file(commentsFile)
 
 
-def load_rom_with_comments(rom_filename):
-    comments = read_new_comments()
+def load_rom_with_comments(rom_filename, comments_filename):
+    comments = read_new_comments(comments_filename)
 
     with open(rom_filename, "rb") as rom_file:
         rom_raw_content = rom_file.read()
@@ -371,12 +371,12 @@ def get_data_skip_ranges(directives):
     return data_ranges
 
 
-def main(rom_filename, cross_ref):
+def main(rom_filename, comments_filename, cross_ref):
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix,
                "cross_ref": cross_ref}
 
-    rom, rom_content, _ = load_rom_with_comments(rom_filename)
+    rom, rom_content, _ = load_rom_with_comments(rom_filename, comments_filename)
 
     for content in rom.get_content(0, len(rom_content) + 1):
         address, region_type, data = content
@@ -395,7 +395,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--romfile', type=str)
     parser.add_argument('--crossref', type=bool)
+    parser.add_argument('--comments', type=str)
 
     args = parser.parse_args()
 
-    main(rom_filename=args.romfile, cross_ref=args.crossref)
+    main(rom_filename=args.romfile, comments_filename=args.comments, cross_ref=args.crossref)
