@@ -125,26 +125,29 @@ def mark_all_code_regions(rom, starting_addresses):
         start = starting_addresses[0]
         starting_addresses = starting_addresses[1:]
 
-        if rom.get_type(start) == 'unknown':
-            # print(start, hex(start))
-            next_data_region_address = find_next_data_region_address(rom, start)
-            instructions, total_size = find_next_unconditional_jump(rom.memory, start, next_data_region_address)
-            rom.mark_code(start, start + total_size)
+        # print(start, hex(start))
+        next_data_region_address = find_next_data_region_address(rom, start)
+        instructions, total_size = find_next_unconditional_jump(rom.memory, start, next_data_region_address)
+        rom.mark_code(start, start + total_size)
 
-            instructions = adjust_relative_displacements(instructions)
+        instructions = adjust_relative_displacements(instructions)
 
-            for instruction in instructions:
-                address, decoded = instruction
+        for instruction in instructions:
+            address, decoded = instruction
+
+            _, _, previous_content = rom.get_content_at(address)
+
+            if previous_content is None:
                 rom.add_content(address, decoded)
 
-            references = collect_address_references(instructions)
-            labels = create_labels_with_callers(instructions)
+        references = collect_address_references(instructions)
+        labels = create_labels_with_callers(instructions)
 
-            rom.add_labels(labels)
+        rom.add_labels(labels)
 
-            references = [r for r in references if rom.get_type(r) == 'unknown']
+        references = [r for r in references if rom.get_type(r) == 'unknown']
 
-            starting_addresses.extend(references)
+        starting_addresses.extend(references)
 
     return rom
 
