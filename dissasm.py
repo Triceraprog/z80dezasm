@@ -213,7 +213,7 @@ def print_code(rom: Rom, address, data, options):
         comments_on_the_right = comments_on_the_right[1:]
         if address == comment_end_address:
             while comments_on_the_right:
-                continuation = "| " if len(comments_on_the_right) > 1 else "\ "
+                continuation = "| " if len(comments_on_the_right) > 1 else r"\ "
                 comment_next_line = (" " * 67) + "; " + continuation + comments_on_the_right[0]
                 print(comment_next_line)
                 comments_on_the_right = comments_on_the_right[1:]
