@@ -365,7 +365,8 @@ def get_data_skip_ranges(directives):
                 if closing_parenthesis == -1:
                     size = 1
                 else:
-                    size = int(directive[5:closing_parenthesis])
+                    opening_parenthesis = directive.find("(")
+                    size = int(directive[opening_parenthesis + 1:closing_parenthesis])
                 data_ranges.append((address, size))
 
     return data_ranges
