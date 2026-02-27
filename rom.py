@@ -12,6 +12,7 @@ class Rom:
         self.comments = defaultdict(list)
         self.descriptions = defaultdict(list)
         self.tags = defaultdict(list)
+        self.nostring_regions = []
 
     def get_type(self, address):
         r = self.__find_region(address)
@@ -82,6 +83,12 @@ class Rom:
 
     def get_tags_at(self, address):
         return self.tags.get(address, set())
+
+    def add_nostring_region(self, start, end):
+        self.nostring_regions.append((start, end))
+
+    def is_in_nostring_region(self, address):
+        return any(start <= address <= end for start, end in self.nostring_regions)
 
     def __split_content_at(self, address):
         if self.get_type(address) != 'data':

@@ -161,5 +161,38 @@ class RomTestCase(unittest.TestCase):
         self.assertEqual(2, len(comments))
 
 
+class NoStringRegionTestCase(unittest.TestCase):
+    memory = bytes(0x10000)
+
+    def test_address_not_in_any_region_returns_false(self):
+        rom = Rom(NoStringRegionTestCase.memory)
+        self.assertFalse(rom.is_in_nostring_region(0x1000))
+
+    def test_exact_address_is_in_single_address_region(self):
+        rom = Rom(NoStringRegionTestCase.memory)
+        rom.add_nostring_region(0x1000, 0x1000)
+        self.assertTrue(rom.is_in_nostring_region(0x1000))
+
+    def test_other_address_not_in_single_address_region(self):
+        rom = Rom(NoStringRegionTestCase.memory)
+        rom.add_nostring_region(0x1000, 0x1000)
+        self.assertFalse(rom.is_in_nostring_region(0x1001))
+
+    def test_address_inside_range_is_in_region(self):
+        rom = Rom(NoStringRegionTestCase.memory)
+        rom.add_nostring_region(0x1000, 0x1FFF)
+        self.assertTrue(rom.is_in_nostring_region(0x1500))
+
+    def test_address_at_end_of_range_is_in_region(self):
+        rom = Rom(NoStringRegionTestCase.memory)
+        rom.add_nostring_region(0x1000, 0x1FFF)
+        self.assertTrue(rom.is_in_nostring_region(0x1FFF))
+
+    def test_address_beyond_range_is_not_in_region(self):
+        rom = Rom(NoStringRegionTestCase.memory)
+        rom.add_nostring_region(0x1000, 0x1FFF)
+        self.assertFalse(rom.is_in_nostring_region(0x2000))
+
+
 if __name__ == '__main__':
     unittest.main()

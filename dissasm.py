@@ -393,7 +393,12 @@ def print_data(rom, address, data, options):
     comments_on_the_right, end_address = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
-    for seg_type, seg_data in _apply_null_termination(_split_data_into_segments(data)):
+    if rom.is_in_nostring_region(address):
+        segments = [('bytes', data)]
+    else:
+        segments = _apply_null_termination(_split_data_into_segments(data))
+
+    for seg_type, seg_data in segments:
         if seg_type in ('string', 'nullstring'):
             null_terminated = (seg_type == 'nullstring')
             chunk_data = seg_data
@@ -462,6 +467,9 @@ def load_rom_with_comments(rom_filename, comments_filename):
     for address, tags in comments.all_tags():
         for tag in tags:
             rom.add_tag(address, tag)
+            if tag == 'NOSTRING':
+                end = comments.end_address_for_comment_at(address)
+                rom.add_nostring_region(address, end)
 
     # for r in sorted(rom.regions):
     #     (begin, end), t = r
