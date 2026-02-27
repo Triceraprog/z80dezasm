@@ -8,13 +8,13 @@ from watchdog.events import FileSystemEventHandler
 
 VERSIONS = {
     "1.0": {
-        "input_file": "../../vg5000_rom_comments/vg5000-rom-comments-1.0.txt",
+        "input_file": "vg5000-rom-comments-1.0.txt",
         "input_rom": "vg5k10.bin",
         "output_rom": "rom-1.0.bin",
         "output_asm": "rom-1.0.asm",
     },
     "1.1": {
-        "input_file": "../../vg5000_rom_comments/vg5000-rom-comments-1.1.txt",
+        "input_file": "vg5000-rom-comments-1.1.txt",
         "input_rom": "vg5000_1.1.rom",
         "output_rom": "rom-1.1.bin",
         "output_asm": "rom-1.1.asm",
@@ -39,13 +39,13 @@ def disassemble(input_file, from_rom, to_asm):
 
 def assemble(from_asm, output_rom):
     print("Assemble " + from_asm)
-    p = subprocess.run(["/home/mokona/Developpement/z80/z88dk/bin/z80asm", "-b", from_asm],
+    p = subprocess.run(["sjasmplus", "--nologo", f"--raw={output_rom}", from_asm],
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE)
 
     if p.returncode != 0:
-        print(p.stdout)
-        print(p.stderr)
+        print(p.stdout.decode())
+        print(p.stderr.decode())
         raise RuntimeError
     else:
         print("Done assembly")
