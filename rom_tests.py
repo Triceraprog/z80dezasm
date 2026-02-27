@@ -15,19 +15,19 @@ class RomTestCase(unittest.TestCase):
         rom = Rom(RomTestCase.memory)
         self.assertEqual("unknown", rom.get_type(0x0004))
 
-    def test_rom_can_be_marked_with_data_range(self):
+    def test_rom_can_be_marked_with_data_region(self):
         rom = Rom(RomTestCase.memory)
         rom.mark_data(0x0003, 0x0009)
         self.assertEqual("data", rom.get_type(0x0004))
         self.assertEqual("unknown", rom.get_type(0x0000))
 
-    def test_rom_can_be_marked_with_code_range(self):
+    def test_rom_can_be_marked_with_code_region(self):
         rom = Rom(RomTestCase.memory)
         rom.mark_code(0x0001, len(RomTestCase.memory) + 1)
         self.assertEqual("code", rom.get_type(0x0004))
         self.assertEqual("unknown", rom.get_type(0x0000))
 
-    def test_rom_can_be_marked_with_code_then_a_sub_data_range(self):
+    def test_rom_can_be_marked_with_code_then_a_sub_data_region(self):
         rom = Rom(RomTestCase.memory)
         rom.mark_code(0x0000, len(RomTestCase.memory) + 1)
         rom.mark_data(0x0003, 0x0009)
@@ -46,13 +46,13 @@ class RomTestCase(unittest.TestCase):
         self.assertEqual("code", rom.get_type(3))
         self.assertEqual("data", rom.get_type(len(RomTestCase.memory)))
 
-    def test_same_type_ranges_are_merged_when_marked_if_contiguous(self):
+    def test_same_type_regions_are_merged_when_marked_if_contiguous(self):
         rom = Rom(RomTestCase.memory)
         rom.mark_code(0x0000, 0x0003)
         rom.mark_code(0x0003, 0x0005)
 
-        self.assertEqual(1, len(rom.ranges))
-        self.assertEqual('code', rom.ranges[0][1])
+        self.assertEqual(1, len(rom.regions))
+        self.assertEqual('code', rom.regions[0][1])
 
     def test_can_add_content_to_an_address(self):
         content1 = "Some untyped content"

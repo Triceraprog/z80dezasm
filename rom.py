@@ -6,7 +6,7 @@ from collections import defaultdict
 class Rom:
     def __init__(self, memory):
         self.memory = memory
-        self.ranges = []
+        self.regions = []
         self.content = {}
         self.labels = {}
         self.comments = defaultdict(list)
@@ -14,7 +14,7 @@ class Rom:
         self.directives = defaultdict(list)
 
     def get_type(self, address):
-        r = self.__find_range(address)
+        r = self.__find_region(address)
 
         if not r:
             return "unknown"
@@ -22,10 +22,10 @@ class Rom:
         return r[1]
 
     def mark_data(self, begin, end):
-        self.__mark_range(begin, end, 'data')
+        self.__mark_region(begin, end, 'data')
 
     def mark_code(self, begin, end):
-        self.__mark_range(begin, end, 'code')
+        self.__mark_region(begin, end, 'code')
 
     def add_content(self, address, content):
         self.content[address] = content
@@ -111,47 +111,47 @@ class Rom:
         self.add_content(address, data[:adjusted_length])
         self.add_content(address + adjusted_length, data[adjusted_length:])
 
-    def __mark_range(self, begin, end, range_type):
+    def __mark_region(self, begin, end, region_type):
         """ begin is inclusive, end is exclusive, to be coherent with range()"""
-        existing_range = self.__find_overlapping_range(begin, end)
-        new_range = ((begin, end), range_type)
+        existing_region = self.__find_overlapping_region(begin, end)
+        new_region = ((begin, end), region_type)
 
-        if not existing_range:
-            self.ranges.append(new_range)
+        if not existing_region:
+            self.regions.append(new_region)
         else:
-            self.ranges.remove(existing_range)
-            ((b_old, e_old), t_old) = existing_range
-            ((b_new, e_new), t_new) = new_range
+            self.regions.remove(existing_region)
+            ((b_old, e_old), t_old) = existing_region
+            ((b_new, e_new), t_new) = new_region
 
             if b_old < b_new:
-                # Existing rang is flowing on the left
+                # Existing region is flowing on the left
                 new_old_left = (b_old, b_new), t_old
-                self.ranges.append(new_old_left)
+                self.regions.append(new_old_left)
 
             if e_old > e_new:
-                # Existing rang is flowing on the right
+                # Existing region is flowing on the right
                 new_old_right = (e_new, e_old), t_old
-                self.ranges.append(new_old_right)
+                self.regions.append(new_old_right)
 
-            self.ranges.append(new_range)
+            self.regions.append(new_region)
 
-        self.__merge_adjacent_ranges()
+        self.__merge_adjacent_regions()
 
-    def __find_overlapping_range(self, begin, end):
-        for r in sorted(self.ranges):
+    def __find_overlapping_region(self, begin, end):
+        for r in sorted(self.regions):
             limits = r[0]
             if (begin < limits[0] < end) or (limits[0] <= begin < limits[1]):
                 return r
 
         return None
 
-    def __find_range(self, address):
-        found_range = [r for r in self.ranges if address in range(*(r[0]))]
-        return found_range[0] if found_range else None
+    def __find_region(self, address):
+        found_region = [r for r in self.regions if address in range(*(r[0]))]
+        return found_region[0] if found_region else None
 
-    def __merge_adjacent_ranges(self):
-        new_ranges = functools.reduce(merge_neighbours, sorted(self.ranges), [])
-        self.ranges = new_ranges
+    def __merge_adjacent_regions(self):
+        new_regions = functools.reduce(merge_neighbours, sorted(self.regions), [])
+        self.regions = new_regions
 
 
 def merge_neighbours(acc, new):

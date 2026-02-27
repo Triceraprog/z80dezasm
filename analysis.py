@@ -110,7 +110,7 @@ def detect_partial_instruction_tricks(instructions, memory):
 
 
 def find_next_data_region_address(rom, scan_start):
-    for (start, stop), t in sorted(rom.ranges):
+    for (start, stop), t in sorted(rom.regions):
         if start >= scan_start and t is "data":
             return start
     return None
@@ -155,7 +155,7 @@ def mark_all_code_regions(rom, starting_addresses):
 def mark_all_data_regions(rom):
     latest_data_begin = 0
     new_regions = []
-    for r in sorted(rom.ranges):
+    for r in sorted(rom.regions):
         (begin, end), t = r
         if begin > latest_data_begin:
             new_region = ((latest_data_begin, begin), 'data')
@@ -171,8 +171,8 @@ def mark_all_data_regions(rom):
     return rom
 
 
-def mark_declared_data_regions(rom, data_ranges):
-    for begin, size in data_ranges:
+def mark_declared_data_regions(rom, data_regions):
+    for begin, size in data_regions:
         end = begin + size
         rom.mark_data(begin, end)
         rom.add_content(begin, rom.memory[begin:end])
@@ -232,11 +232,11 @@ def detect_partial_instructions(rom):
     return rom
 
 
-def analysis(rom, starting_addresses, data_ranges=None):
-    if data_ranges is None:
-        data_ranges = []
+def analysis(rom, starting_addresses, data_regions=None):
+    if data_regions is None:
+        data_regions = []
 
-    rom = mark_declared_data_regions(rom, data_ranges)
+    rom = mark_declared_data_regions(rom, data_regions)
     rom = mark_all_code_regions(rom, starting_addresses)
     rom = mark_all_data_regions(rom)
     rom = inject_instructions_on_missing_labels(rom)
@@ -350,13 +350,13 @@ class RomCodeAnalysisProcessTestCase(unittest.TestCase):
 
         rom = mark_all_code_regions(rom, starting_addresses)
 
-        self.assertEqual(2, len(rom.ranges))
-        self.assertEqual(((0, 3), 'code'), rom.ranges[0])
-        self.assertEqual(((9, 12), 'code'), rom.ranges[1])
+        self.assertEqual(2, len(rom.regions))
+        self.assertEqual(((0, 3), 'code'), rom.regions[0])
+        self.assertEqual(((9, 12), 'code'), rom.regions[1])
 
         rom = mark_all_data_regions(rom)
-        self.assertEqual(3, len(rom.ranges))
-        self.assertEqual(((3, 9), 'data'), rom.ranges[1])
+        self.assertEqual(3, len(rom.regions))
+        self.assertEqual(((3, 9), 'data'), rom.regions[1])
 
         expected = (0x0000, 'code', ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3))
         found = None

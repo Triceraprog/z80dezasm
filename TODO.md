@@ -1,9 +1,4 @@
-- The masks for opcode decoding can be optimized by complete masking and hashing
-- Is separation between REGISTERs and REGISTER_PAIRs necessary?
-- Decoding
-  - Every memorized address is added as a label
-  - Unused labels are logged at the end (those which are not named and not pointing to the ROM)
-- Rename Ranges to Regions
+
 - Rename comment specifiers as tags
 - Merge labels and references parsing
 - Try to detect strings to turn DEFB to DEFM
@@ -14,3 +9,4 @@
 - Can add comments on def'd addresses
 - State difference between beeing called and being jumped in
 - Honor the multi-line comments
+- Remove absolute local paths from the whole git history (e.g. z80asm)
