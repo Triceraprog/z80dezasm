@@ -44,16 +44,6 @@ def adjust_relative_displacements(instructions):
     return new_instructions
 
 
-def collect_address_references(instructions):
-    references = []
-    for pc, instruction in instructions:
-        mnemonic, p1, v1, p2, v2, size = instruction
-        if mnemonic in ("JP", "JR", "DJNZ", "CALL", "RST") and p2 is P_IMMEDIATE_16:
-            references.append(v2)
-
-    return references
-
-
 def create_labels_with_callers(instructions):
     labels = {}
     for pc, instruction in instructions:
@@ -140,12 +130,11 @@ def mark_all_code_regions(rom, starting_addresses):
             if previous_content is None:
                 rom.add_content(address, decoded)
 
-        references = collect_address_references(instructions)
         labels = create_labels_with_callers(instructions)
 
         rom.add_labels(labels)
 
-        references = [r for r in references if rom.get_type(r) == 'unknown']
+        references = [r for r in labels.keys() if rom.get_type(r) == 'unknown']
 
         starting_addresses.extend(references)
 
@@ -281,22 +270,6 @@ class RomCodeTestCase(unittest.TestCase):
         self.assertEqual(0x0009, new_instructions[0][1][4])
         self.assertEqual(0x1000, new_instructions[1][1][4])
         self.assertEqual(0x100B, new_instructions[2][1][4])
-
-    def test_collect_address_references_from_instructions(self):
-        instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3)),
-                        (0x1003, ('DJNZ', None, None, P_IMMEDIATE_16, 0x1000, 2)),
-                        (0x1005, ('JR', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x100B, 2)),
-                        (0x1007, ('CALL', None, None, P_IMMEDIATE_16, 0x2000, 3)),
-                        (0x100A, ('RST', P_CONDITION, COND_NZ, P_IMMEDIATE_16, 0x0038, 1))]
-
-        references = collect_address_references(instructions)
-
-        self.assertEqual(5, len(references))
-        self.assertIn(0x0009, references)
-        self.assertIn(0x1000, references)
-        self.assertIn(0x100B, references)
-        self.assertIn(0x2000, references)
-        self.assertIn(0x0038, references)
 
     def test_create_labels_with_callers(self):
         instructions = [(0x1000, ('JP', None, None, P_IMMEDIATE_16, 0x0009, 3)),

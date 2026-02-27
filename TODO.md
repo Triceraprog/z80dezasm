@@ -1,5 +1,4 @@
 
-- Merge labels and references parsing
 - Try to detect strings to turn DEFB to DEFM
 - Add hints for register base jumps to trace code and automatic comments
 - Don't turn user defined labels as minor cases
