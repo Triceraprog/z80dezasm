@@ -241,6 +241,83 @@ def print_code(rom: Rom, address, data, options):
         exit(1)
 
 
+_MIN_STRING_LENGTH = 4
+_DEFM_MAX_CHARS = 40
+
+
+def _is_printable(byte):
+    return 32 <= byte <= 126
+
+
+def _split_data_into_segments(data):
+    """Split data into ('string', bytes) or ('bytes', bytes) segments.
+    A 'string' segment is a run of >= _MIN_STRING_LENGTH printable ASCII bytes."""
+    n = len(data)
+    in_string = [False] * n
+
+    i = 0
+    while i < n:
+        if _is_printable(data[i]):
+            j = i
+            while j < n and _is_printable(data[j]):
+                j += 1
+            if j - i >= _MIN_STRING_LENGTH:
+                for k in range(i, j):
+                    in_string[k] = True
+            i = j
+        else:
+            i += 1
+
+    segments = []
+    i = 0
+    while i < n:
+        if in_string[i]:
+            j = i
+            while j < n and in_string[j]:
+                j += 1
+            segments.append(('string', data[i:j]))
+            i = j
+        else:
+            j = i
+            while j < n and not in_string[j]:
+                j += 1
+            segments.append(('bytes', data[i:j]))
+            i = j
+
+    return segments
+
+
+def _defm_arg(string_data):
+    """Build a sjasmplus DEFM argument, splitting on embedded double-quote bytes."""
+    parts = []
+    i = 0
+    while i < len(string_data):
+        if string_data[i] == 0x22:
+            parts.append("$22")
+            i += 1
+        else:
+            j = i
+            while j < len(string_data) and string_data[j] != 0x22:
+                j += 1
+            parts.append('"' + "".join(chr(b) for b in string_data[i:j]) + '"')
+            i = j
+    return ",".join(parts)
+
+
+def print_defm_line(string_data, comment, label, hex_prefix):
+    defm_arg = _defm_arg(string_data)
+    char_string = "".join(chr(b) for b in string_data)
+
+    line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
+        mnemonic="defm",
+        data=defm_arg,
+        char_string=char_string[:10],
+        comment=comment
+    )
+    labeled_line = "{label:<12} {line}".format(label=label, line=line)
+    print(labeled_line)
+
+
 def print_data_line(data, size, comment, label, hex_prefix):
     line_data = data[:size]
     byte_string = memory_to_byte_list(line_data, hex_prefix, ",")
@@ -273,16 +350,23 @@ def print_data(rom, address, data, options):
     comments_on_the_right, end_address = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
-    while data:
-        comment = "" if not comments_on_the_right else comments_on_the_right[0]
-
-        print_data_line(data, data_per_line, comment, label_name, hex_prefix)
-
-        comments_on_the_right = comments_on_the_right[1:]
-        label_name = ""
-
-        address += data_per_line
-        data = data[data_per_line:]
+    for seg_type, seg_data in _split_data_into_segments(data):
+        if seg_type == 'string':
+            chunk_data = seg_data
+            while chunk_data:
+                comment = "" if not comments_on_the_right else comments_on_the_right[0]
+                print_defm_line(chunk_data[:_DEFM_MAX_CHARS], comment, label_name, hex_prefix)
+                comments_on_the_right = comments_on_the_right[1:]
+                label_name = ""
+                chunk_data = chunk_data[_DEFM_MAX_CHARS:]
+        else:
+            chunk_data = seg_data
+            while chunk_data:
+                comment = "" if not comments_on_the_right else comments_on_the_right[0]
+                print_data_line(chunk_data, data_per_line, comment, label_name, hex_prefix)
+                comments_on_the_right = comments_on_the_right[1:]
+                label_name = ""
+                chunk_data = chunk_data[data_per_line:]
 
     while comments_on_the_right:
         comment_next_line = (" " * 80) + "; " + comments_on_the_right[0]
