@@ -213,22 +213,48 @@ class FromDecodedToStringTestCase(unittest.TestCase):
         self.assertEqual(expected, output)
 
 
+# sjasmplus operator keywords that cannot be used as label operands
+_SJASMPLUS_RESERVED = frozenset(
+    ['low', 'high', 'not', 'and', 'or', 'xor', 'shl', 'shr', 'mod', 'abs', 'norel', 'exist']
+)
+
+
+def _safe_label(name):
+    """Return None if name conflicts with a sjasmplus operator keyword."""
+    if not isinstance(name, str):
+        return name  # numeric values are always safe
+    return None if name.lower() in _SJASMPLUS_RESERVED else name
+
+
 def inject_label_on_call(labels, decoded):
     mnemonic, p1, v1, p2, v2 = decoded
 
     new_v1 = v1
     if p1 is P_IMMEDIATE_16 or p1 is P_IMMEDIATE_16_INDIRECT:
         if mnemonic in ('JP', 'JR', 'CALL', 'RST') or v1 != 0:
-            new_v1 = labels.get(v1, (v1, []))
-            new_v1, _ = new_v1
+            label_name, _ = labels.get(v1, (v1, []))
+            new_v1 = label_name if _safe_label(label_name) else v1
 
     new_v2 = v2
     if p2 is P_IMMEDIATE_16 or p2 is P_IMMEDIATE_16_INDIRECT:
         if mnemonic in ('JP', 'JR', 'CALL', 'RST') or v2 != 0:
-            new_v2 = labels.get(v2, (v2, []))
-            new_v2, _ = new_v2
+            label_name, _ = labels.get(v2, (v2, []))
+            new_v2 = label_name if _safe_label(label_name) else v2
 
     return mnemonic, p1, new_v1, p2, new_v2
+
+
+def find_reserved_label_conflicts(labels, decoded):
+    """Return list of (address, label_name) for labels skipped due to sjasmplus keyword conflicts."""
+    mnemonic, p1, v1, p2, v2 = decoded
+    conflicts = []
+    for param, value in [(p1, v1), (p2, v2)]:
+        if param is P_IMMEDIATE_16 or param is P_IMMEDIATE_16_INDIRECT:
+            if isinstance(value, int) and (mnemonic in ('JP', 'JR', 'CALL', 'RST') or value != 0):
+                label_name, _ = labels.get(value, (value, []))
+                if isinstance(label_name, str) and _safe_label(label_name) is None:
+                    conflicts.append((value, label_name))
+    return conflicts
 
 
 class InjectingLabelsTestCase(unittest.TestCase):

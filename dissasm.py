@@ -1,7 +1,7 @@
 from analysis import analysis
 from comments_new import read_new_comment_file
 from rom import Rom
-from z80opcode_strings import decoded_to_string, inject_label_on_call, P_CONDITION
+from z80opcode_strings import decoded_to_string, inject_label_on_call, find_reserved_label_conflicts, P_CONDITION
 
 comment_leftovers = []
 comment_end_address = 0
@@ -133,13 +133,18 @@ def print_code(rom: Rom, address, data, options):
     byte_string = memory_to_byte_list(rom.memory[address:address + decoded_size])
 
     if not options.get("not_label", False):
+        conflicts = find_reserved_label_conflicts(rom.labels, data[:-1])
         decoded = inject_label_on_call(rom.labels, data[:-1])
     else:
+        conflicts = []
         decoded = data[:-1]
 
     string = decoded_to_string(decoded, options=options)
     comments_on_the_right, end_address = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=70)
+
+    for addr, name in conflicts:
+        comments_on_the_right.append(f"'{name}' (${addr:04x}) skipped: sjasmplus reserved keyword")
 
     partial_instruction = [c for c in comments if c[0] == 'partial-instruction']
     partial_instruction_count = len(partial_instruction)
@@ -286,11 +291,15 @@ def print_data(rom, address, data, options):
 
 
 def dump_undefined_labels(rom):
+    from z80opcode_strings import _SJASMPLUS_RESERVED
     memory_size = len(rom.memory)
     for label in rom.get_labels():
         address, (name, refs) = label
         if address >= memory_size or not rom.get_content_at(address):
-            print(" " * 13 + "defc     " + name.lower() + "=${address:>04x}".format(address=address))
+            if name.lower() not in _SJASMPLUS_RESERVED:
+                print(f"{name.lower():<12} {'EQU':<8} ${address:04x}")
+            else:
+                print(f"; '{name.lower()}' (${address:04x}) skipped: sjasmplus reserved keyword")
 
 
 def read_new_comments(comments_filename="new_comments.txt"):
@@ -378,6 +387,10 @@ def main(rom_filename, comments_filename, cross_ref):
                "cross_ref": cross_ref}
 
     rom, rom_content, _ = load_rom_with_comments(rom_filename, comments_filename)
+
+    print("    OPT --syntax=a")
+    print("    ORG $0000")
+    print()
 
     for content in rom.get_content(0, len(rom_content) + 1):
         address, region_type, data = content
