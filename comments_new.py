@@ -24,7 +24,7 @@ def get_starting_address(line):
 
 COMMENT_TYPE_LABEL = "LABEL"
 COMMENT_TYPE_TEXT = "TEXT"
-COMMENT_TYPE_DIRECTIVE = "DIRECTIVE"
+COMMENT_TYPE_TAG = "TAG"
 COMMENT_TYPE_ERROR = "ERROR"
 
 
@@ -41,7 +41,7 @@ def get_type_and_content(s: str):
         else:
             return COMMENT_TYPE_ERROR, s
     elif s[0] == '%':
-        return COMMENT_TYPE_DIRECTIVE, s[1:].split(',')
+        return COMMENT_TYPE_TAG, s[1:].split(',')
     else:
         return COMMENT_TYPE_TEXT, s
 
@@ -50,7 +50,7 @@ class NewCommentParser:
     def __init__(self):
         self.labels = {}
         self.texts = {}
-        self.directives = {}
+        self.tags = {}
         self.descriptions = {}
         self.end_address = {}
 
@@ -84,14 +84,14 @@ class NewCommentParser:
             elif t is COMMENT_TYPE_TEXT:
                 agglomerated_text = self.__agglomerate_text(content)
                 self.texts[address] = agglomerated_text
-            elif t is COMMENT_TYPE_DIRECTIVE:
-                self.directives[address] = content
+            elif t is COMMENT_TYPE_TAG:
+                self.tags[address] = content
             self.current_type = t
         else:
             t, content = get_type_and_content(line.strip())
 
-            if t is COMMENT_TYPE_DIRECTIVE:
-                self.directives[self.current_address] = content
+            if t is COMMENT_TYPE_TAG:
+                self.tags[self.current_address] = content
             else:
                 agglomerated_text = self.__agglomerate_text(content)
 
@@ -107,8 +107,8 @@ class NewCommentParser:
     def get_comment_at(self, addr: int):
         return self.texts.get(addr)
 
-    def get_directives_at(self, addr: int):
-        return self.directives.get(addr)
+    def get_tags_at(self, addr: int):
+        return self.tags.get(addr)
 
     def get_description_at(self, addr: int):
         return self.descriptions.get(addr)
@@ -128,8 +128,8 @@ class NewCommentParser:
     def all_texts(self):
         return self.texts.items()
 
-    def all_directives(self):
-        return self.directives.items()
+    def all_tags(self):
+        return self.tags.items()
 
     def all_descriptions(self):
         return self.descriptions.items()

@@ -1,7 +1,7 @@
 import unittest
 
 from comments_new import get_starting_address, get_type_and_content, COMMENT_TYPE_LABEL, COMMENT_TYPE_ERROR, \
-    COMMENT_TYPE_TEXT, COMMENT_TYPE_DIRECTIVE, NewCommentParser
+    COMMENT_TYPE_TEXT, COMMENT_TYPE_TAG, NewCommentParser
 
 
 class UtilityFunctionTestCase(unittest.TestCase):
@@ -38,10 +38,10 @@ class ExtractCommentTestCase(unittest.TestCase):
         self.assertIs(COMMENT_TYPE_TEXT, t)
         self.assertEqual("This is some text", c)
 
-    def test_can_extract_directives(self):
+    def test_can_extract_tags(self):
         t, c = get_type_and_content("%NTS,CODE")
 
-        self.assertIs(COMMENT_TYPE_DIRECTIVE, t)
+        self.assertIs(COMMENT_TYPE_TAG, t)
         self.assertEqual(["NTS", "CODE"], c)
 
 
@@ -62,13 +62,13 @@ class NewCommentsFormatTestCase(unittest.TestCase):
 
         self.assertEqual("This is a comment.", c.get_comment_at(0x0010))
 
-    def test_can_read_a_single_directive(self):
+    def test_can_read_a_single_tag(self):
         s = r"$0020		%NTS"
 
         c = NewCommentParser()
         c.feed(s)
 
-        self.assertEqual(["NTS"], c.get_directives_at(0x0020))
+        self.assertEqual(["NTS"], c.get_tags_at(0x0020))
 
     def test_can_read_a_description_text_after_a_label(self):
         s = [r"$0020		[function]",
@@ -93,7 +93,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
         self.assertEqual("This is a multiline text to describe a single address\nand it is a multiline text.",
                          c.get_comment_at(0x0030))
 
-    def test_can_read_a_multiline_text_after_a_directive(self):
+    def test_can_read_a_multiline_text_after_a_tag(self):
         s = [r"$0040		%NTS",
              r"             This is a multiline text to describe a single address",
              r"             and it is a multiline text."]
@@ -104,9 +104,9 @@ class NewCommentsFormatTestCase(unittest.TestCase):
 
         self.assertEqual("This is a multiline text to describe a single address\nand it is a multiline text.",
                          c.get_comment_at(0x0040))
-        self.assertEqual(["NTS"], c.get_directives_at(0x0040))
+        self.assertEqual(["NTS"], c.get_tags_at(0x0040))
 
-    def test_can_read_a_directive_after_a_label(self):
+    def test_can_read_a_tag_after_a_label(self):
         s = [r"$0040		[directive]",
              r"             %NTS",
              r"             This is a multiline text to describe a single address",
@@ -117,7 +117,7 @@ class NewCommentsFormatTestCase(unittest.TestCase):
             c.feed(line)
 
         self.assertEqual("directive", c.get_label_at(0x0040))
-        self.assertEqual(["NTS"], c.get_directives_at(0x0040))
+        self.assertEqual(["NTS"], c.get_tags_at(0x0040))
         self.assertEqual("This is a multiline text to describe a single address\nand it is a multiline text.",
                          c.get_description_at(0x0040))
 

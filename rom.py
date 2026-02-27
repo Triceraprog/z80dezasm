@@ -11,7 +11,7 @@ class Rom:
         self.labels = {}
         self.comments = defaultdict(list)
         self.descriptions = defaultdict(list)
-        self.directives = defaultdict(list)
+        self.tags = defaultdict(list)
 
     def get_type(self, address):
         r = self.__find_region(address)
@@ -77,11 +77,11 @@ class Rom:
     def get_description_at(self, address):
         return self.descriptions.get(address, set())
 
-    def add_directive(self, address, directive):
-        self.directives[address].append(directive)
+    def add_tag(self, address, tag):
+        self.tags[address].append(tag)
 
-    def get_directives_at(self, address):
-        return self.directives.get(address, set())
+    def get_tags_at(self, address):
+        return self.tags.get(address, set())
 
     def __split_content_at(self, address):
         if self.get_type(address) != 'data':
