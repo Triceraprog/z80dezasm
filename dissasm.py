@@ -435,7 +435,15 @@ def dump_undefined_labels(rom):
         address, (name, refs) = label
         if address >= memory_size or not rom.get_content_at(address):
             if name.lower() not in _SJASMPLUS_RESERVED:
-                print(f"{name.lower():<12} {'EQU':<8} ${address:04x}")
+                descriptions = rom.get_description_at(address)
+                lines = [line for desc in descriptions for line in desc] if descriptions else []
+                lines = format_comments(lines, width=60)
+                equ_line = f"{name.lower():<12} {'EQU':<8} ${address:04x}"
+                if lines:
+                    equ_line += f"  ; {lines[0]}"
+                print(equ_line)
+                for c in lines[1:]:
+                    print(f"{'':<29}; {c}")
             else:
                 print(f"; '{name.lower()}' (${address:04x}) skipped: sjasmplus reserved keyword")
 
