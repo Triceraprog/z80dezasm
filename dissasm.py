@@ -419,6 +419,9 @@ def print_data(rom, address, data, options):
                 label_name = ""
                 chunk_data = chunk_data[data_per_line:]
 
+    if label_name:
+        print(f"{label_name}")
+
     while comments_on_the_right:
         comment_next_line = (" " * 80) + "; " + comments_on_the_right[0]
         print(comment_next_line)

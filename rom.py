@@ -91,6 +91,9 @@ class Rom:
         return any(start <= address <= end for start, end in self.nostring_regions)
 
     def __split_content_at(self, address):
+        if address >= len(self.memory):
+            return
+
         if self.get_type(address) != 'data':
             return
 

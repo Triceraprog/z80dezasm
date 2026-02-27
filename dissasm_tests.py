@@ -1,5 +1,8 @@
-from dissasm import get_data_skip_regions, _split_data_into_segments, _apply_null_termination
+from dissasm import get_data_skip_regions, _split_data_into_segments, _apply_null_termination, print_data
+from rom import Rom
 
+import io
+import sys
 import unittest
 
 
@@ -91,6 +94,63 @@ class ApplyNullTerminationTestCase(unittest.TestCase):
         result = _apply_null_termination(segments)
         self.assertEqual([('bytes', b"\x00\x01"), ('string', b"World")], result)
 
+
+class PrintDataEmptyTestCase(unittest.TestCase):
+    """Tests that labels are preserved when content is empty (label at end of content block)."""
+
+    def _capture_print_data(self, memory, address, data, label=None):
+        rom = Rom(memory)
+        rom.mark_data(0, len(memory))
+        rom.add_content(address, data)
+        if label:
+            rom.name_label(address, label)
+        captured = io.StringIO()
+        sys.stdout = captured
+        try:
+            print_data(rom, address, data, {"hex_prefix": "$"})
+        finally:
+            sys.stdout = sys.__stdout__
+        return captured.getvalue()
+
+    def test_label_on_non_empty_data_is_printed(self):
+        output = self._capture_print_data(bytes(10), 0, b"\x01\x02", label="my_label")
+        self.assertIn("my_label:", output)
+
+    def test_label_on_empty_data_is_still_printed(self):
+        output = self._capture_print_data(bytes(10), 0, b"", label="boundary_label")
+        self.assertIn("boundary_label:", output)
+
+    def test_no_label_on_empty_data_produces_no_output(self):
+        output = self._capture_print_data(bytes(10), 0, b"")
+        self.assertEqual("", output.strip())
+
+    def test_split_at_end_of_content_creates_empty_content_with_visible_label(self):
+        """When a label is placed exactly at the end of a content block, it must appear inline."""
+        rom = Rom(bytes(20))
+        rom.mark_data(0, 20)
+        rom.add_content(0, bytes(range(8)))
+        rom.name_label(8, "end_boundary")
+        # After split: content[0]=8 bytes, content[8]=b""
+        _, _, data_at_8 = rom.get_content_at(8)
+        self.assertEqual(b"", data_at_8)
+        # The label must still appear in output
+        captured = io.StringIO()
+        sys.stdout = captured
+        try:
+            print_data(rom, 8, b"", {"hex_prefix": "$"})
+        finally:
+            sys.stdout = sys.__stdout__
+        self.assertIn("end_boundary:", captured.getvalue())
+
+    def test_label_beyond_rom_boundary_does_not_create_empty_content(self):
+        """A label at or beyond the ROM memory boundary should not create empty data content."""
+        rom = Rom(bytes(8))  # ROM is 8 bytes: $0000-$0007
+        rom.mark_data(0, 8)
+        rom.add_content(0, bytes(range(8)))
+        # Label at address 8 is exactly at ROM boundary (beyond valid memory)
+        rom.name_label(8, "beyond_rom")
+        _, _, content = rom.get_content_at(8)
+        self.assertIsNone(content)
 
 if __name__ == '__main__':
     unittest.main()
