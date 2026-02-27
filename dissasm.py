@@ -351,15 +351,13 @@ def print_defm_line(string_data, comment, label, hex_prefix, null_terminated=Fal
     defm_arg = _defm_arg(string_data)
     if null_terminated:
         defm_arg += ",0"
-    char_string = "".join(_display_char(b) for b in string_data)
 
-    line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
+    line = "{mnemonic:<8} {data:<57} ; {comment}".format(
         mnemonic="defm",
         data=defm_arg,
-        char_string=char_string[:10],
         comment=comment
     )
-    labeled_line = "{label:<12} {line}".format(label=label, line=line)
+    labeled_line = "{label:<12} {line}".format(label=label, line=line).rstrip()
     print(labeled_line)
 
 
