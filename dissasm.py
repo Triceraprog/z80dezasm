@@ -244,24 +244,41 @@ def print_code(rom: Rom, address, data, options):
 _MIN_STRING_LENGTH = 4
 _DEFM_MAX_CHARS = 40
 
+# VG5000µ special characters used in French text (byte value → display char)
+_VG5000_CHAR_DISPLAY = {
+    0x11: 'î',
+    0x12: 'é',
+    0x1b: 'ê',
+}
+_VG5000_TEXT_CHARS = set(_VG5000_CHAR_DISPLAY.keys())
+
 
 def _is_printable(byte):
     return 32 <= byte <= 126
 
 
+def _display_char(byte):
+    """Return a human-readable character for use in comments."""
+    if byte in _VG5000_CHAR_DISPLAY:
+        return _VG5000_CHAR_DISPLAY[byte]
+    return chr(byte) if _is_printable(byte) else '.'
+
+
 def _split_data_into_segments(data):
     """Split data into ('string', bytes) or ('bytes', bytes) segments.
-    A 'string' segment is a run of >= _MIN_STRING_LENGTH printable ASCII bytes."""
+    A 'string' segment contains >= _MIN_STRING_LENGTH printable ASCII bytes,
+    potentially interleaved with VG5000 special text characters."""
     n = len(data)
     in_string = [False] * n
 
     i = 0
     while i < n:
-        if _is_printable(data[i]):
+        if _is_printable(data[i]) or data[i] in _VG5000_TEXT_CHARS:
             j = i
-            while j < n and _is_printable(data[j]):
+            while j < n and (_is_printable(data[j]) or data[j] in _VG5000_TEXT_CHARS):
                 j += 1
-            if j - i >= _MIN_STRING_LENGTH:
+            printable_count = sum(1 for k in range(i, j) if _is_printable(data[k]))
+            if printable_count >= _MIN_STRING_LENGTH:
                 for k in range(i, j):
                     in_string[k] = True
             i = j
@@ -287,26 +304,54 @@ def _split_data_into_segments(data):
     return segments
 
 
+def _apply_null_termination(segments):
+    """Convert ('string', s) followed by a bytes segment starting with $00
+    into ('nullstring', s), consuming that $00 from the bytes segment."""
+    segments = list(segments)
+    result = []
+    i = 0
+    while i < len(segments):
+        seg_type, seg_data = segments[i]
+        if (seg_type == 'string'
+                and i + 1 < len(segments)
+                and segments[i + 1][0] == 'bytes'
+                and segments[i + 1][1][0:1] == b'\x00'):
+            result.append(('nullstring', seg_data))
+            tail = segments[i + 1][1][1:]
+            if tail:
+                segments[i + 1] = ('bytes', tail)
+            else:
+                i += 1  # skip now-empty bytes segment
+        else:
+            result.append((seg_type, seg_data))
+        i += 1
+    return result
+
+
 def _defm_arg(string_data):
-    """Build a sjasmplus DEFM argument, splitting on embedded double-quote bytes."""
+    """Build sjasmplus DEFM argument.
+    Double-quote bytes become $22; VG5000 special chars become $xx."""
     parts = []
     i = 0
     while i < len(string_data):
-        if string_data[i] == 0x22:
-            parts.append("$22")
+        b = string_data[i]
+        if b == 0x22 or b in _VG5000_TEXT_CHARS:
+            parts.append(f"${b:02x}")
             i += 1
         else:
             j = i
-            while j < len(string_data) and string_data[j] != 0x22:
+            while j < len(string_data) and string_data[j] != 0x22 and string_data[j] not in _VG5000_TEXT_CHARS:
                 j += 1
-            parts.append('"' + "".join(chr(b) for b in string_data[i:j]) + '"')
+            parts.append('"' + "".join(chr(x) for x in string_data[i:j]) + '"')
             i = j
     return ",".join(parts)
 
 
-def print_defm_line(string_data, comment, label, hex_prefix):
+def print_defm_line(string_data, comment, label, hex_prefix, null_terminated=False):
     defm_arg = _defm_arg(string_data)
-    char_string = "".join(chr(b) for b in string_data)
+    if null_terminated:
+        defm_arg += ",0"
+    char_string = "".join(_display_char(b) for b in string_data)
 
     line = "{mnemonic:<8} {data:<44} ; {char_string:10} ; {comment}".format(
         mnemonic="defm",
@@ -350,12 +395,15 @@ def print_data(rom, address, data, options):
     comments_on_the_right, end_address = create_online_comment(comments, label_references)
     comments_on_the_right = format_comments(comments_on_the_right, width=70)
 
-    for seg_type, seg_data in _split_data_into_segments(data):
-        if seg_type == 'string':
+    for seg_type, seg_data in _apply_null_termination(_split_data_into_segments(data)):
+        if seg_type in ('string', 'nullstring'):
+            null_terminated = (seg_type == 'nullstring')
             chunk_data = seg_data
             while chunk_data:
                 comment = "" if not comments_on_the_right else comments_on_the_right[0]
-                print_defm_line(chunk_data[:_DEFM_MAX_CHARS], comment, label_name, hex_prefix)
+                is_last_chunk = len(chunk_data) <= _DEFM_MAX_CHARS
+                print_defm_line(chunk_data[:_DEFM_MAX_CHARS], comment, label_name, hex_prefix,
+                                null_terminated=(null_terminated and is_last_chunk))
                 comments_on_the_right = comments_on_the_right[1:]
                 label_name = ""
                 chunk_data = chunk_data[_DEFM_MAX_CHARS:]

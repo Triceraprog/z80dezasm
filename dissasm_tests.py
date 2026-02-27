@@ -1,4 +1,4 @@
-from dissasm import get_data_skip_regions, _split_data_into_segments
+from dissasm import get_data_skip_regions, _split_data_into_segments, _apply_null_termination
 
 import unittest
 
@@ -46,10 +46,50 @@ class SplitDataIntoSegmentsTestCase(unittest.TestCase):
     def test_empty_data_returns_empty(self):
         self.assertEqual([], _split_data_into_segments(b""))
 
-    def test_double_quote_in_string_stays_as_string_segment(self):
-        data = b'Say "hello"'
+    def test_vg5000_char_within_string_extends_segment(self):
+        # $12 ('é') between printable runs should merge them into one string segment
+        data = b"D\x12passement de capacit\x12"
         result = _split_data_into_segments(data)
         self.assertEqual([('string', data)], result)
+
+    def test_vg5000_char_at_start_of_string(self):
+        # $12 before printable run: if total printable >= MIN, it's a string
+        data = b"\x12puis\x12es"
+        result = _split_data_into_segments(data)
+        self.assertEqual([('string', data)], result)
+
+    def test_isolated_vg5000_char_without_enough_printable_stays_bytes(self):
+        # $12 + 3 printable chars = not enough printable → stays bytes
+        data = b"\x12abc"
+        result = _split_data_into_segments(data)
+        self.assertEqual([('bytes', data)], result)
+
+
+class ApplyNullTerminationTestCase(unittest.TestCase):
+    def test_string_followed_by_null_becomes_nullstring(self):
+        segments = [('string', b"Hello"), ('bytes', b"\x00")]
+        result = _apply_null_termination(segments)
+        self.assertEqual([('nullstring', b"Hello")], result)
+
+    def test_string_followed_by_null_and_more_bytes(self):
+        segments = [('string', b"Hello"), ('bytes', b"\x00\x01\x02")]
+        result = _apply_null_termination(segments)
+        self.assertEqual([('nullstring', b"Hello"), ('bytes', b"\x01\x02")], result)
+
+    def test_string_not_followed_by_null_stays_string(self):
+        segments = [('string', b"Hello"), ('bytes', b"\x01\x02")]
+        result = _apply_null_termination(segments)
+        self.assertEqual([('string', b"Hello"), ('bytes', b"\x01\x02")], result)
+
+    def test_string_at_end_stays_string(self):
+        segments = [('string', b"Hello")]
+        result = _apply_null_termination(segments)
+        self.assertEqual([('string', b"Hello")], result)
+
+    def test_bytes_unaffected(self):
+        segments = [('bytes', b"\x00\x01"), ('string', b"World")]
+        result = _apply_null_termination(segments)
+        self.assertEqual([('bytes', b"\x00\x01"), ('string', b"World")], result)
 
 
 if __name__ == '__main__':
