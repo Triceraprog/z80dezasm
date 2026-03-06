@@ -3,9 +3,43 @@ import itertools
 from collections import defaultdict
 
 
+class OffsetMemory:
+    """Memory view that maps absolute addresses to bytes with an org offset.
+
+    Allows rom.memory[address] when address >= org to transparently
+    access the underlying byte array (address - org is the raw index).
+    """
+
+    def __init__(self, data, org=0):
+        self._data = data
+        self._org = org
+
+    @property
+    def org(self):
+        return self._org
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            start = (key.start - self._org) if key.start is not None else None
+            stop = (key.stop - self._org) if key.stop is not None else None
+            if start is not None and start < 0:
+                start = 0
+            if stop is not None and stop < 0:
+                stop = 0
+            return self._data[start:stop:key.step]
+        idx = key - self._org
+        if idx < 0 or idx >= len(self._data):
+            return 0
+        return self._data[idx]
+
+    def __len__(self):
+        return self._org + len(self._data)
+
+
 class Rom:
-    def __init__(self, memory):
-        self.memory = memory
+    def __init__(self, memory, org=0):
+        self.memory = OffsetMemory(memory, org) if org != 0 else memory
+        self.org = org
         self.regions = []
         self.content = {}
         self.labels = {}
