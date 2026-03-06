@@ -134,7 +134,8 @@ def mark_all_code_regions(rom, starting_addresses):
 
         rom.add_labels(labels)
 
-        references = [r for r in labels.keys() if rom.get_type(r) == 'unknown']
+        references = [r for r in labels.keys()
+                      if rom.get_type(r) == 'unknown' and rom.org <= r < len(rom.memory)]
 
         starting_addresses.extend(references)
 
@@ -142,7 +143,7 @@ def mark_all_code_regions(rom, starting_addresses):
 
 
 def mark_all_data_regions(rom):
-    latest_data_begin = 0
+    latest_data_begin = rom.org
     new_regions = []
     for r in sorted(rom.regions):
         (begin, end), t = r
@@ -173,30 +174,37 @@ def inject_instructions_on_missing_labels(rom):
     for label in rom.get_labels():
         address, label = label
         address, region_type, content = rom.get_content_at(address)
-        if not content and address < len(rom.memory):
+        if not content and rom.org <= address < len(rom.memory):
             fully_decoded = decode_full(rom.memory[address:])
-            rom.add_content(address, fully_decoded)
+            instructions = [(address, fully_decoded)]
 
             # As this can result in an instruction size less than the span
             # of memory the previous instruction covers, let's decode a bit
             # further
             size = fully_decoded[-1]
-            address += size
+            next_address = address + size
 
             # Maximum instruction size is 5, we will already have one
             # on the instruction before
             left_to_decode = 4 - size
 
             while left_to_decode > 0:
-                fully_decoded = decode_full(rom.memory[address:])
-                rom.add_content(address, fully_decoded)
+                _, _, existing = rom.get_content_at(next_address)
+                if isinstance(existing, tuple) and len(existing) == 6:
+                    break  # Already has a decoded instruction, don't overwrite
+                fully_decoded = decode_full(rom.memory[next_address:])
+                instructions.append((next_address, fully_decoded))
 
                 size = fully_decoded[-1]
                 if size == 0:
                     break
 
-                address += size
+                next_address += size
                 left_to_decode -= size
+
+            instructions = adjust_relative_displacements(instructions)
+            for instr_addr, instr in instructions:
+                rom.add_content(instr_addr, instr)
 
     return rom
 

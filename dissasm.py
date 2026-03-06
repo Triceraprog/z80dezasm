@@ -445,7 +445,8 @@ def dump_undefined_labels(rom):
     memory_size = len(rom.memory)
     for label in rom.get_labels():
         address, (name, refs) = label
-        if address >= memory_size or not rom.get_content_at(address):
+        _, _, content = rom.get_content_at(address)
+        if address >= memory_size or address < rom.org or content is None:
             if name.lower() not in _SJASMPLUS_RESERVED:
                 descriptions = rom.get_description_at(address)
                 lines = [line for desc in descriptions for line in desc] if descriptions else []
@@ -465,16 +466,16 @@ def read_new_comments(comments_filename="new_comments.txt"):
         return read_new_comment_file(commentsFile)
 
 
-def load_rom_with_comments(rom_filename, comments_filename):
+def load_rom_with_comments(rom_filename, comments_filename, org=0x0000, entry_point=None):
     comments = read_new_comments(comments_filename)
 
     with open(rom_filename, "rb") as rom_file:
         rom_raw_content = rom_file.read()
 
     data_skip_regions = get_data_skip_regions(comments.all_tags())
-    starting_addresses = get_starting_addresses(comments.all_tags(), data_skip_regions)
+    starting_addresses = get_starting_addresses(comments.all_tags(), org, data_skip_regions, entry_point)
 
-    rom = Rom(rom_raw_content)
+    rom = Rom(rom_raw_content, org)
     rom = analysis(rom, starting_addresses, data_skip_regions)
 
     for address, label in comments.all_labels():
@@ -503,14 +504,16 @@ def load_rom_with_comments(rom_filename, comments_filename):
     return rom, rom_raw_content, starting_addresses
 
 
-def get_starting_addresses(tags, data_skip_regions=None):
+def get_starting_addresses(tags, org=0x0000, data_skip_regions=None, entry_point=None):
     if data_skip_regions is None:
         data_skip_regions = []
 
-    starting_addresses = [0x0000]
-    # Adding RST addresses
-    for rst in range(1, 8):
-        starting_addresses.append(rst * 8)
+    first = entry_point if entry_point is not None else org
+    starting_addresses = [first]
+    # Adding RST addresses only when the ROM starts at 0 (VG5000 style)
+    if org == 0:
+        for rst in range(1, 8):
+            starting_addresses.append(rst * 8)
 
     # Adding specific CODE parts
     for address, tags in tags:
@@ -542,18 +545,18 @@ def get_data_skip_regions(tags):
     return data_regions
 
 
-def main(rom_filename, comments_filename, cross_ref):
+def main(rom_filename, comments_filename, cross_ref, org=0x0000, entry_point=None):
     hex_prefix = "$"
     options = {"hex_prefix": hex_prefix,
                "cross_ref": cross_ref}
 
-    rom, rom_content, _ = load_rom_with_comments(rom_filename, comments_filename)
+    rom, rom_content, _ = load_rom_with_comments(rom_filename, comments_filename, org, entry_point)
 
     print("    OPT --syntax=a")
-    print("    ORG $0000")
+    print(f"    ORG ${org:04X}")
     print()
 
-    for content in rom.get_content(0, len(rom_content) + 1):
+    for content in rom.get_content(0, len(rom.memory) + 1):
         address, region_type, data = content
 
         if region_type == 'code':
@@ -571,7 +574,12 @@ if __name__ == '__main__':
     parser.add_argument('--romfile', type=str)
     parser.add_argument('--crossref', type=bool)
     parser.add_argument('--comments', type=str)
+    parser.add_argument('--org', type=lambda x: int(x, 0), default=0x0000,
+                        help='ROM load address (default: 0x0000)')
+    parser.add_argument('--entry-point', type=lambda x: int(x, 0), default=None,
+                        help='Initial code entry point (default: same as --org)')
 
     args = parser.parse_args()
 
-    main(rom_filename=args.romfile, comments_filename=args.comments, cross_ref=args.crossref)
+    main(rom_filename=args.romfile, comments_filename=args.comments,
+         cross_ref=args.crossref, org=args.org, entry_point=args.entry_point)
