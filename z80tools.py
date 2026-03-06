@@ -55,6 +55,11 @@ REG_L = "R_L"
 REG_AT_HL = "R_AT_HL"
 REG_A = "R_A"
 
+REG_IXH = "R_IXH"
+REG_IXL = "R_IXL"
+REG_IYH = "R_IYH"
+REG_IYL = "R_IYL"
+
 REGISTERS = [REG_B, REG_C, REG_D, REG_E, REG_H, REG_L, REG_AT_HL, REG_A]
 
 COND_NZ = "COND_NZ"
@@ -200,38 +205,56 @@ def condition_register(register_shift=0):
 
 def register_fix_for_dd_and_fd_prefix(decoded, memory, prefix):
     mnemonic, p1, v1, p2, v2, size = decoded
-    result = None
 
     substitute = REG_IX if prefix == 0xDD else REG_IY
+    sub_h = REG_IXH if prefix == 0xDD else REG_IYH
+    sub_l = REG_IXL if prefix == 0xDD else REG_IYL
 
-    if p1 is P_REGISTER and v1 is REG_AT_HL:
-        if p2 is None or (p2 is P_REGISTER and v2 is REG_A):
-            (_, displacement), _ = displacement_decode(None, memory[0:])
-            result = mnemonic, P_REGISTER_INDEXED, (substitute, displacement), p2, v2, size + 2
-        elif p2 is P_IMMEDIATE_8:
-            (_, displacement), _ = displacement_decode(None, memory[0:])
-            (_, value), _ = immediate_8_decode(None, memory[1:])
-            result = mnemonic, P_REGISTER_INDEXED, (substitute, displacement), p2, value, size + 2
-
-    elif p2 is P_REGISTER and v2 is REG_AT_HL:
-        if p1 is P_REGISTER or p1 is P_IMMEDIATE_8:
-            (p, value), p_size = displacement_decode(None, memory[0:])
-            result = mnemonic, p1, v1, P_REGISTER_INDEXED, (substitute, value), size + p_size + 1
-
-    elif (mnemonic == "EX" and
-                  p1 is P_REGISTER_PAIR and v1 is REG_DE and
-                  p2 is P_REGISTER_PAIR and v2 is REG_HL):
+    # EX DE, HL is explicitly unaffected by the DD/FD prefix
+    if (mnemonic == "EX" and
+            p1 is P_REGISTER_PAIR and v1 is REG_DE and
+            p2 is P_REGISTER_PAIR and v2 is REG_HL):
         return decoded
 
-    elif p1 is P_REGISTER_PAIR and v1 is REG_HL:
-        if p2 is None or p2 == P_IMMEDIATE_16:
-            result = mnemonic, p1, substitute, p2, v2, size + 1
+    p1_is_at_hl = (p1 is P_REGISTER and v1 is REG_AT_HL)
+    p2_is_at_hl = (p2 is P_REGISTER and v2 is REG_AT_HL)
 
-    elif p2 is P_REGISTER_PAIR and v2 is REG_HL:
-        if p1 is None:
-            result = mnemonic, p1, v1, p2, substitute, size + 1
+    # (HL) → (IX+d) / (IY+d); displacement byte is inserted after the opcode
+    if p1_is_at_hl or p2_is_at_hl:
+        (_, displacement), _ = displacement_decode(None, memory[0:])
+        if p1_is_at_hl:
+            if p2 is P_IMMEDIATE_8:
+                # LD (HL),n → LD (IX+d),n  [displacement + immediate data]
+                (_, imm_val), _ = immediate_8_decode(None, memory[1:])
+                return mnemonic, P_REGISTER_INDEXED, (substitute, displacement), p2, imm_val, size + 2
+            else:
+                # LD (HL),r or INC/DEC (HL) etc.  — source register unchanged even if H or L
+                return mnemonic, P_REGISTER_INDEXED, (substitute, displacement), p2, v2, size + 2
+        else:
+            # LD r,(HL) / ALU A,(HL) etc. — destination unchanged even if H or L
+            return mnemonic, p1, v1, P_REGISTER_INDEXED, (substitute, displacement), size + 2
 
-    return result or ("DD/FD PREFIX TODO", None, None, None, None, 1)
+    # HL register pair → IX / IY  (handles both p1 and p2 independently)
+    p1_is_hl = (p1 is P_REGISTER_PAIR and v1 is REG_HL)
+    p2_is_hl = (p2 is P_REGISTER_PAIR and v2 is REG_HL)
+    if p1_is_hl or p2_is_hl:
+        new_v1 = substitute if p1_is_hl else v1
+        new_v2 = substitute if p2_is_hl else v2
+        return mnemonic, p1, new_v1, p2, new_v2, size + 1
+
+    # H / L single registers → IXH/IXL or IYH/IYL (undocumented instructions)
+    def _sub(reg):
+        if reg is REG_H: return sub_h
+        if reg is REG_L: return sub_l
+        return reg
+
+    new_v1 = _sub(v1) if p1 is P_REGISTER else v1
+    new_v2 = _sub(v2) if p2 is P_REGISTER else v2
+    if new_v1 is not v1 or new_v2 is not v2:
+        return mnemonic, p1, new_v1, p2, new_v2, size + 1
+
+    # Instruction does not reference HL/H/L/(HL): prefix acts as NONI (1 byte)
+    return "NONI", None, None, None, None, 1
 
 
 # Format on the table is

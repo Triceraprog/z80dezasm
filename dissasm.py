@@ -193,21 +193,33 @@ def print_code(rom: Rom, address, data, options):
         elif ending_comment_line:
             first_line_of_comments = r"\ "
 
-    # Preserve casing in char arguments
-    arguments = string[1]
-    if arguments.count("'") == 2 and arguments.count(",") == 1:
-        before_comma, after_comma = arguments.split(",")
-        arguments = before_comma.lower() + "," + after_comma
+    # NONI: a DD/FD prefix byte with no effect on the following instruction.
+    # Emit as a raw data byte with a comment so the binary round-trips correctly.
+    if string[0] == "NONI":
+        raw_byte = f"${rom.memory[address]:02x}"
+        line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
+            hex_prefix=options.get("hex_prefix", "0x"),
+            pc=address,
+            bytes=byte_string,
+            mnemonic="defb",
+            args=raw_byte,
+            comment="NONI" + ((" ; " + first_line_of_comments) if first_line_of_comments.strip() else ""))
     else:
-        arguments = arguments.lower()
+        # Preserve casing in char arguments
+        arguments = string[1]
+        if arguments.count("'") == 2 and arguments.count(",") == 1:
+            before_comma, after_comma = arguments.split(",")
+            arguments = before_comma.lower() + "," + after_comma
+        else:
+            arguments = arguments.lower()
 
-    line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
-        hex_prefix=options.get("hex_prefix", "0x"),
-        pc=address,
-        bytes=byte_string,
-        mnemonic=string[0].lower(),
-        args=arguments,
-        comment=first_line_of_comments)
+        line = "{mnemonic:<8} {args:<20} ; {hex_prefix}{pc:0>4x} {bytes:<15} ; {comment}".format(
+            hex_prefix=options.get("hex_prefix", "0x"),
+            pc=address,
+            bytes=byte_string,
+            mnemonic=string[0].lower(),
+            args=arguments,
+            comment=first_line_of_comments)
 
     labeled_line = "{label:<12} {line}".format(label=label_name, line=line)
     print(labeled_line)
