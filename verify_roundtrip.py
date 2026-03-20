@@ -65,7 +65,22 @@ def diff(reference_rom, rebuilt_rom):
     print("Files are identical.")
 
 
+def verify_file_exists(filename):
+    if not os.path.exists(filename):
+        print(f"File {filename} does not exist")
+        return False
+    return True
+
+
 def run(config):
+    all_files_exist = True
+    all_files_exist &= verify_file_exists(config["input_file"])
+    all_files_exist &= verify_file_exists(config["input_rom"])
+
+    if not all_files_exist:
+        print("At least one input file does not exist. Stopping.")
+        return
+
     disassemble(config["input_file"],
                 config["input_rom"],
                 config["output_asm"],
