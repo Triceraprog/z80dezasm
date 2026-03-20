@@ -1,6 +1,1 @@
 - Remove the old comment format processing
-- Make it a package
-- Make it uv compatible
-- Unify the verify_roundtrip.py
-- Better launch for unit tests
-- 

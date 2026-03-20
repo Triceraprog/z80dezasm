@@ -6,26 +6,15 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-VERSIONS = {
-    "1.0": {
-        "input_file": "vg5000-rom-comments-1.0.txt",
-        "input_rom": "vg5k10.bin",
-        "output_rom": "rom-1.0.bin",
-        "output_asm": "rom-1.0.asm",
-    },
-    "1.1": {
-        "input_file": "vg5000-rom-comments-1.1.txt",
-        "input_rom": "vg5000_1.1.rom",
-        "output_rom": "rom-1.1.bin",
-        "output_asm": "rom-1.1.asm",
-    },
-}
 
+def disassemble(input_file, from_rom, to_asm, org=None, entry_point=None):
+    cmd = ["uv", "run", "z80decomp", "--romfile", from_rom, "--comments", input_file]
+    if org is not None:
+        cmd += ["--org", hex(org)]
+    if entry_point is not None:
+        cmd += ["--entry-point", hex(entry_point)]
 
-def disassemble(input_file, from_rom, to_asm):
-    p = subprocess.run(["uv", "run", "z80decomp", "--romfile", from_rom, "--comments", input_file],
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if p.returncode != 0:
         print(p.stdout)
@@ -77,7 +66,11 @@ def diff(reference_rom, rebuilt_rom):
 
 
 def run(config):
-    disassemble(config["input_file"], config["input_rom"], config["output_asm"])
+    disassemble(config["input_file"],
+                config["input_rom"],
+                config["output_asm"],
+                org=config.get("org") or 0,
+                entry_point=config.get("entry_point") or 0)
     assemble(config["output_asm"], config["output_rom"])
     diff(config["input_rom"], config["output_rom"])
 
@@ -93,11 +86,22 @@ class RoundtripEventHandler(FileSystemEventHandler):
 
 def main():
     parser = argparse.ArgumentParser(description="Verify ROM round-trip: disassemble, reassemble, diff.")
-    parser.add_argument("version", choices=list(VERSIONS.keys()), help="ROM version to verify")
+    parser.add_argument("--romfile", required=True, help="Input ROM file")
+    parser.add_argument("--comments", required=True, help="Comments/annotations file")
+    parser.add_argument("--output", required=True, help="Output basename (produces <output>.bin and <output>.asm)")
+    parser.add_argument("--org", type=int, help="Origin address (optional)")
+    parser.add_argument("--entry-point", type=int, help="Entry point address (optional)")
     parser.add_argument("--watch", action="store_true", help="Watch for changes and re-run automatically")
     args = parser.parse_args()
 
-    config = VERSIONS[args.version]
+    config = {
+        "input_file": args.comments,
+        "input_rom": args.romfile,
+        "output_rom": args.output + ".bin",
+        "output_asm": args.output + ".asm",
+        "org": args.org,
+        "entry_point": args.entry_point,
+    }
 
     run(config)
 
@@ -105,7 +109,7 @@ def main():
         event_handler = RoundtripEventHandler(config)
         observer = Observer()
         path_to_watch = os.path.dirname(config["input_file"])
-        print(f"Watching {path_to_watch} for changes...")
+        print(f"Watching {path_to_watch} for changes to {config['input_file']}...")
         observer.schedule(event_handler, path_to_watch, recursive=False)
         observer.start()
         try:
