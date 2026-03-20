@@ -14,7 +14,7 @@ CONFIG = {
 
 
 def disassemble(input_file, from_rom, to_asm):
-    p = subprocess.run(["python3", "dissasm.py", "--romfile", from_rom, "--comments", input_file,
+    p = subprocess.run(["uv", "run", "z80decomp", "--romfile", from_rom, "--comments", input_file,
                         "--org", "0xB000", "--entry-point", "0xC3C3"],
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE)

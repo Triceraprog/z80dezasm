@@ -1,4 +1,4 @@
-from dissasm import load_rom_with_comments
+from .dissasm import load_rom_with_comments
 
 
 def print_for_address(rom, address, code):

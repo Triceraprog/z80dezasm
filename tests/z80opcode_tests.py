@@ -1,4 +1,4 @@
-from z80tools import *
+from z80decomp.z80tools import *
 
 import unittest
 

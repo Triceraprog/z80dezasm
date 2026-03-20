@@ -1,7 +1,7 @@
 import unittest
 
-from rom import Rom
-from z80tools import decode_full, \
+from .rom import Rom
+from .z80tools import decode_full, \
     P_IMMEDIATE_16, P_DISPLACEMENT, P_CONDITION, COND_NZ, P_REGISTER_PAIR, \
     REG_HL, REG_BC, P_IMMEDIATE_8
 

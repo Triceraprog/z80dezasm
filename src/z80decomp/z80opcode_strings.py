@@ -1,4 +1,4 @@
-from z80tools import *
+from .z80tools import *
 
 
 def get_param_str(param, value, options):

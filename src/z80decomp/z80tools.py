@@ -1,5 +1,5 @@
 import unittest
-from two_complement import two_complement_to_signed
+from .two_complement import two_complement_to_signed
 
 
 # xxyyyzzz

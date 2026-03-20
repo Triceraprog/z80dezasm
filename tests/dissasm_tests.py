@@ -1,5 +1,5 @@
-from dissasm import get_data_skip_regions, _split_data_into_segments, _apply_null_termination, print_data
-from rom import Rom
+from z80decomp.dissasm import get_data_skip_regions, _split_data_into_segments, _apply_null_termination, print_data
+from z80decomp.rom import Rom
 
 import io
 import sys

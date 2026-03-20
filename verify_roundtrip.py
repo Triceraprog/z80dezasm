@@ -23,7 +23,7 @@ VERSIONS = {
 
 
 def disassemble(input_file, from_rom, to_asm):
-    p = subprocess.run(["python3", "dissasm.py", "--romfile", from_rom, "--comments", input_file],
+    p = subprocess.run(["uv", "run", "z80decomp", "--romfile", from_rom, "--comments", input_file],
                        stdout=subprocess.PIPE,
                        stderr=subprocess.PIPE)
 

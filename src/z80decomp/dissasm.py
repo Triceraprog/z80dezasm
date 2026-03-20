@@ -1,7 +1,7 @@
-from analysis import analysis
-from comments_new import read_new_comment_file
-from rom import Rom
-from z80opcode_strings import decoded_to_string, inject_label_on_call, find_reserved_label_conflicts, P_CONDITION
+from .analysis import analysis
+from .comments_new import read_new_comment_file
+from .rom import Rom
+from .z80opcode_strings import decoded_to_string, inject_label_on_call, find_reserved_label_conflicts, P_CONDITION
 
 comment_leftovers = []
 comment_end_address = 0
@@ -441,7 +441,7 @@ def print_data(rom, address, data, options):
 
 
 def dump_undefined_labels(rom):
-    from z80opcode_strings import _SJASMPLUS_RESERVED
+    from .z80opcode_strings import _SJASMPLUS_RESERVED
     memory_size = len(rom.memory)
     for label in rom.get_labels():
         address, (name, refs) = label
@@ -567,7 +567,7 @@ def main(rom_filename, comments_filename, cross_ref, org=0x0000, entry_point=Non
     dump_undefined_labels(rom)
 
 
-if __name__ == '__main__':
+def cli():
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -583,3 +583,7 @@ if __name__ == '__main__':
 
     main(rom_filename=args.romfile, comments_filename=args.comments,
          cross_ref=args.crossref, org=args.org, entry_point=args.entry_point)
+
+
+if __name__ == '__main__':
+    cli()
