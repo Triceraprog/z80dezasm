@@ -1,0 +1,8 @@
+.idea
+*.pyc
+*.rom
+*.asm
+*.err
+*.hex
+*.o
+*.bin
