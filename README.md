@@ -1,12 +1,21 @@
-# z80tools
+# z80decomp
 
-Disassembler and round-trip verification tools for the VG5000µ ROM.
+`z80decomp` is a tool to help disassemble and annotate Z80 binary files.
+The project is focused in understanding old computer ROMs and produce a human-readable
+assembly source file that can be reassembled to the original binary.
+
+See [History](#a-bit-of-history-on-the-project) below for more information.
 
 ## Dependencies
 
-- Python 3 (needed)
-- [sjasmplus](https://github.com/z00m128/sjasmplus) (must be in PATH, only for round-trip verification)
-- Python package `watchdog` (only for watch mode in round-trip verification)
+### For disassembly and annotation:
+- 
+- Python 3.10 or later
+
+### For round-trip verification:
+
+- [sjasmplus](https://github.com/z00m128/sjasmplus) (must be in PATH)
+- Python package `watchdog` (for watch mode)
 
 ## Disassembler
 
@@ -21,7 +30,7 @@ Output is written to stdout. The generated assembly includes:
 
 - `OPT --syntax=a` to disambiguate instructions like `sub a,d` from
   sjasmplus's multi-argument syntax
-- `ORG $0000` to set the origin
+- `ORG $0000` to set the origin (can be modified to a different address if needed)
 - `EQU` definitions for labels pointing outside the ROM
 - Inline comments flagging any label names that conflict with sjasmplus
   reserved keywords (`low`, `high`, `or`, etc.), which are replaced by their
@@ -48,7 +57,8 @@ python3 verify_roundtrip.py 1.1 --watch
 
 ### Required files
 
-Each version expects the following files in the project directory:
+The verification script is hardcoded on the VG5000 ROM versions 1.0 and 1.1 at the moment.
+It will work with the following files in the current directory:
 
 | Version | ROM input | Comments file | ASM output | Binary output |
 |---------|-----------|---------------|------------|---------------|
