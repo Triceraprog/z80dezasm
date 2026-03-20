@@ -9,7 +9,7 @@ See [History](#a-bit-of-history-on-the-project) below for more information.
 ## Dependencies
 
 ### For disassembly and annotation:
-- 
+
 - Python 3.10 or later
 
 ### For round-trip verification:
@@ -73,3 +73,30 @@ python3 -m unittest dissasm_tests z80opcode_tests comments_new_tests rom_tests
 
 ## A bit of history on the project
 
+This project was originally started in 2017 as a set of scripts to disassemble the ROM of the
+Philips VG5000µ, a Z80-based home computer from the 1980s.
+
+The idea was to produce a commented assembly source file that could be reassembled to the original binary.
+That way, the ROM could be understood and documented. It could also be modified. Mainly, everything
+was for fun.
+
+The disassembly was based on this [article](http://z80.info/decoding.htm) on decoding Z80 opcodes.
+
+Ealy on, I wanted to have the comments on a dedicated file that would serve as a source
+to be injected in the generated assembly. That way, the comments could be edited and improved without
+having to edit, re-read the generated assembly file.
+
+My process was to have a two pane editor with one for editing the comments and the other for reading
+the output. A background process would watch for changes in the comments file and re-run the disassembly
+and verify that the generated assembly could be reassembled to the original binary.
+
+That's a bit more heavy that annotating the assembly file directly, but would help if I need to
+change the comment formatting (which I did a few times).
+
+One early feature was also to follow the code path through the `call`s and `jp`s instructions, to
+quickly identify the code blocks from the data. I also added some commands to give indications
+to the disassembler. For example marking a block as code. Or specifying that some apparent opcode
+was actually data.
+
+I later used the tool to check some information on some other computers, without a full
+comment (PHC-25 and X07 for example).

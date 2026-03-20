@@ -1,6 +1,6 @@
-- Remove absolute local paths from the whole git history (e.g. z80asm)
 - Remove the old comment format processing
 - Make it a package
 - Make it uv compatible
-- Update README.md and add History of the project
 - Unify the verify_roundtrip.py
+- Better launch for unit tests
+- 
