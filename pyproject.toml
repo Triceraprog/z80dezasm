@@ -22,7 +22,11 @@ packages = ["src/z80dezasm"]
 testpaths = ["tests"]
 python_files = ["*_tests.py", "test_*.py"]
 
+[tool.pylint.messages_control]
+disable = ["missing-module-docstring", "missing-function-docstring", "line-too-long"]
+
 [dependency-groups]
 dev = [
+    "pylint>=4.0.5",
     "pytest>=9.0.2",
 ]
