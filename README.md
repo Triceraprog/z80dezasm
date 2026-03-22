@@ -128,7 +128,6 @@ It has parameters similar to the disassembler:
 ```
 usage: verify_roundtrip.py [-h] --romfile ROMFILE --comments COMMENTS --output OUTPUT [--org ORG]
                            [--entry-point ENTRY_POINT] [--watch]
-verify_roundtrip.py: error: the following arguments are required: --romfile, --comments, --output
 ```
 
 - `output` specified a base name that will be used to create the `output.asm` and `output.bin` files
@@ -146,9 +145,13 @@ Files are identical.
 
 **Watch mode** (re-runs automatically when the comments file changes):
 
-```
-python3 verify_roundtrip.py 1.0 --watch
-python3 verify_roundtrip.py 1.1 --watch
+```bash
+python3 verify_roundtrip.py --romfile example.rom --comments example.txt --output result --watch
+Writing assembly to result.asm
+Assemble result.asm
+Done assembly
+Files are identical.
+Watching xxxx for changes to example.txt...
 ```
 
 The watch mode is useful when analyzing to have a kind of interactive workflow where your
@@ -158,7 +161,7 @@ It needs the optional `watchdog` dependency for `python`.
 
 ## Running the tests
 
-```
+```bash
 uv run pytest
 ```
 
@@ -175,7 +178,8 @@ The disassembly was based on this [article](http://z80.info/decoding.htm) on dec
 
 Early on, I wanted to have the comments on a dedicated file that would serve as a source
 to be injected in the generated assembly. That way, the comments could be edited and improved without
-having to edit, re-read the generated assembly file.
+having to edit, re-read the generated assembly file. This also allows to publish comments without
+having to publish the binary file.
 
 My process was to have a two pane editor with one for editing the comments and the other for reading
 the output. A background process would watch for changes in the comments file and re-run the disassembly
@@ -185,7 +189,7 @@ That's a bit more heavy that annotating the assembly file directly, but would he
 change the comment formatting (which I did a few times).
 
 One early feature was also to follow the code path through the `call`s and `jp`s instructions, to
-quickly identify the code blocks from the data. I also added some commands to give indications
+quickly identify the code blocks from the data. Also having cross-references. I also added some commands to give indications
 to the disassembler. For example marking a block as code. Or specifying that some apparent opcode
 was actually data.
 
