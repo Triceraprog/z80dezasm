@@ -6,3 +6,4 @@
 *.hex
 *.o
 *.bin
+uv.lock
