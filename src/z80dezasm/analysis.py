@@ -101,7 +101,7 @@ def detect_partial_instruction_tricks(instructions, memory):
 
 def find_next_data_region_address(rom, scan_start):
     for (start, stop), t in sorted(rom.regions):
-        if start >= scan_start and t is "data":
+        if start >= scan_start and t == "data":
             return start
     return None
 
