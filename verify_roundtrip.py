@@ -9,7 +9,7 @@ from watchdog.events import FileSystemEventHandler
 script_directory = os.path.dirname(os.path.realpath(__file__))
 
 def disassemble(input_file, from_rom, to_asm, org=None, entry_point=None):
-    cmd = ["uv", "run", "z80decomp", "--romfile", from_rom, "--comments", input_file]
+    cmd = ["uv", "run", "z80dezasm", "--romfile", from_rom, "--comments", input_file]
     if org is not None:
         cmd += ["--org", hex(org)]
     if entry_point is not None:

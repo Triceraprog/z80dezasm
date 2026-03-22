@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "z80decomp"
+name = "z80dezasm"
 version = "0.9.0"
 description = "Z80 ROM disassembler and annotation tool"
 requires-python = ">=3.10"
@@ -13,10 +13,10 @@ dependencies = []
 watch = ["watchdog"]
 
 [project.scripts]
-z80decomp = "z80decomp.dissasm:cli"
+z80dezasm = "z80dezasm.dissasm:cli"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/z80decomp"]
+packages = ["src/z80dezasm"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

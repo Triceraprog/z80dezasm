@@ -1,6 +1,6 @@
 import unittest
 
-from z80decomp.comments import get_starting_address, get_type_and_content, COMMENT_TYPE_LABEL, COMMENT_TYPE_ERROR, \
+from z80dezasm.comments import get_starting_address, get_type_and_content, COMMENT_TYPE_LABEL, COMMENT_TYPE_ERROR, \
     COMMENT_TYPE_TEXT, COMMENT_TYPE_TAG, NewCommentParser
 
 

@@ -1,4 +1,4 @@
-from z80decomp.rom import Rom
+from z80dezasm.rom import Rom
 
 import unittest
 

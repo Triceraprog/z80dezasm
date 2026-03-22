@@ -1,6 +1,6 @@
-# z80decomp
+# z80dezasm
 
-`z80decomp` is a tool to help disassemble and annotate Z80 binary files.
+`z80dezasm` is a tool to help disassemble and annotate Z80 binary files.
 The project is focused in understanding old computer ROMs and produce a human-readable
 assembly source file that can be reassembled to the original binary.
 

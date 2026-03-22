@@ -571,9 +571,9 @@ def cli():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--romfile', type=str)
-    parser.add_argument('--crossref', type=bool)
-    parser.add_argument('--comments', type=str)
+    parser.add_argument('--romfile', type=str, required=True)
+    parser.add_argument('--crossref', type=bool, required=False, default=False)
+    parser.add_argument('--comments', type=str, required=True)
     parser.add_argument('--org', type=lambda x: int(x, 0), default=0x0000,
                         help='ROM load address (default: 0x0000)')
     parser.add_argument('--entry-point', type=lambda x: int(x, 0), default=None,
