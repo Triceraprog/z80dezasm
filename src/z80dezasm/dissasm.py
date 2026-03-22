@@ -106,19 +106,26 @@ def print_common(rom, address):
         print("\n".join(description))
 
 
-def print_code(rom: Rom, address, data, options):
-    global comment_leftovers, comment_end_address
+def collect_address_context(rom, address, options):
+    """Print description preamble and return (label_name, label_references, comments)."""
 
     print_common(rom, address)
 
     hex_prefix = options.get("hex_prefix", "0x")
-
     label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
 
     if not options.get("cross_ref", False):
         label_references = []
 
     comments = rom.get_comments_at(address)
+
+    return label_name, label_references, comments
+
+
+def print_code(rom: Rom, address, data, options):
+    global comment_leftovers, comment_end_address
+
+    label_name, label_references, comments = collect_address_context(rom, address, options)
 
     decoded_size = data[-1]
 
@@ -165,7 +172,7 @@ def print_code(rom: Rom, address, data, options):
     ending_comment_line = False
     continuing_comment_line = False
     if (len(comment_leftovers) == 0 and end_address != address and len(comments_on_the_right) > 0) or \
-        len(comments_on_the_right) > 1:
+            len(comments_on_the_right) > 1:
         starting_comment_line = True
     if address == comment_end_address and len(comment_leftovers) <= 1:
         ending_comment_line = True
@@ -391,14 +398,8 @@ def print_data_line(data, size, comment, label, hex_prefix):
 
 
 def print_data(rom, address, data, options):
-    print_common(rom, address)
-
+    label_name, label_references, comments = collect_address_context(rom, address, options)
     hex_prefix = options.get("hex_prefix", "0x")
-    label_name, label_references = get_label_and_x_ref(rom.get_label_at(address), hex_prefix)
-    if not options.get("cross_ref", False):
-        label_references = []
-
-    comments = rom.get_comments_at(address)
 
     data_per_line = 10
 
