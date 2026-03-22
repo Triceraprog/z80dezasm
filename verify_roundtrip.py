@@ -99,6 +99,19 @@ class RoundtripEventHandler(FileSystemEventHandler):
             run(self.config)
 
 
+def int_or_str_hex(org: str) -> int:
+    """ Gets a string that can be either a decimal or a hex number and returns it as an int. """
+    if org is None:
+        return None
+    try:
+        return int(org, 16)
+    except ValueError:
+        pass
+
+    return int(org)
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Verify ROM round-trip: disassemble, reassemble, diff.")
     parser.add_argument("--romfile", required=True, help="Input ROM file")
@@ -114,8 +127,8 @@ def main():
         "input_rom": args.romfile,
         "output_rom": args.output + ".bin",
         "output_asm": args.output + ".asm",
-        "org": args.org,
-        "entry_point": args.entry_point,
+        "org": int_or_str_hex(args.org),
+        "entry_point": int_or_str_hex(args.entry_point),
     }
 
     run(config)
