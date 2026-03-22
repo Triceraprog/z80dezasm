@@ -81,7 +81,39 @@ start:       ei                            ; $0083 fb              ;
 jump0084:    jp       jump0084             ; $0084 c3 84 00        ; 
 ```
 
-It can be useful during analysis, but can be cumbersome when publishing. 
+It can be useful during analysis, but can be cumbersome when publishing.
+
+## Comment file format
+
+The commit file format is describe by the following:
+
+- The 11 first column is reserved for the address of address range on which the comment applies.
+- From column 13 onward are placed comments and directives.
+- A name between square brackets (`[` and `]`) is a `label`, a named address. It is placed on the same line as the
+  address or address range.
+- The `%` character is a prefix for tags, which are directives:
+    - `CODE` states that this address contains executable code, even if no apparent jump or call leads to it.
+    It is generally used when indirection tables are computed address are jumped/called.
+    - `SECTION` states a new section. It is ignored by the disassembler and is more for the comment file organization.
+    - `NTS` states a « Null Terminated String » in the data.
+    - `MS\_BASIC` states an equivalent label for a reference BASIC. It is ignored and was mainly a help in my early
+      usage.
+    - `CHAR` states that the parameter of the opcode at this address is a character. The disassembler will replace the
+      numeric value by a character.
+    - `NOT\_LABEL` states that the opcode parameter is actually not a label, even if the value happens to match a valid
+      label address.
+    - `DATASKIP` states that the commented byte is not an instruction but data in a code path that will be skipped by
+      some mechanism. Main example is verification of a specific character in an input flow where a `rst` is done, followed
+      by the parameter for the routine and the routine adjusts the return address to skip the parameter.
+    - `NOSTRING` states that this part should not be parsed as a character string even if it looks like it. For example,
+      in string tables where the first byte has its bit 7 high to indicates the start of string, the result
+      of displaying strings is not really readable. I find it best to indicate a `NOSTRING`, displayable data is anyway
+      written in the corresponding comments in the output.
+- When a comment is associated to a label, it indicates a general comment. Thus, it is displayed
+  before the label in the output.
+- When a comment is not associated to a label, then it indicated a comment on a specific line or
+  range. It is then displayed on the comment part of the lines, on the right.
+
 
 ## Round-trip verification
 
@@ -141,7 +173,7 @@ was for fun.
 
 The disassembly was based on this [article](http://z80.info/decoding.htm) on decoding Z80 opcodes.
 
-Ealy on, I wanted to have the comments on a dedicated file that would serve as a source
+Early on, I wanted to have the comments on a dedicated file that would serve as a source
 to be injected in the generated assembly. That way, the comments could be edited and improved without
 having to edit, re-read the generated assembly file.
 
