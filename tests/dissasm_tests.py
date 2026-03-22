@@ -98,7 +98,8 @@ class ApplyNullTerminationTestCase(unittest.TestCase):
 class PrintDataEmptyTestCase(unittest.TestCase):
     """Tests that labels are preserved when content is empty (label at end of content block)."""
 
-    def _capture_print_data(self, memory, address, data, label=None):
+    @staticmethod
+    def _capture_print_data(memory, address, data, label=None):
         rom = Rom(memory)
         rom.mark_data(0, len(memory))
         rom.add_content(address, data)

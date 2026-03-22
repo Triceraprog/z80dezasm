@@ -449,7 +449,7 @@ def decode_full(memory):
                     param_2 = decode_parameter(entry[3], split_opcode, memory[1:])
                     param_2, size_2 = param_2
 
-                    decoded_instruction = (mnemonic,) + (param_1) + (param_2) + (1 + size_1 + size_2 + prefix_size,)
+                    decoded_instruction = (mnemonic,) + param_1 + param_2 + (1 + size_1 + size_2 + prefix_size,)
                     decoded_instruction = prefix_context_register_fix(decoded_instruction, memory[1:], prefix)
 
                     return decoded_instruction
