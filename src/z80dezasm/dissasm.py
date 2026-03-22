@@ -366,7 +366,7 @@ def _defm_arg(string_data):
     return ",".join(parts)
 
 
-def print_defm_line(string_data, comment, label, hex_prefix, null_terminated=False):
+def print_defm_line(string_data, comment, label, null_terminated=False):
     defm_arg = _defm_arg(string_data)
     if null_terminated:
         defm_arg += ",0"
@@ -418,7 +418,7 @@ def print_data(rom, address, data, options):
             while chunk_data:
                 comment = "" if not comments_on_the_right else comments_on_the_right[0]
                 is_last_chunk = len(chunk_data) <= _DEFM_MAX_CHARS
-                print_defm_line(chunk_data[:_DEFM_MAX_CHARS], comment, label_name, hex_prefix,
+                print_defm_line(chunk_data[:_DEFM_MAX_CHARS], comment, label_name,
                                 null_terminated=(null_terminated and is_last_chunk))
                 comments_on_the_right = comments_on_the_right[1:]
                 label_name = ""
