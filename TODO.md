@@ -1,0 +1,1 @@
+- Add a binary sample with comments to the repository to use in the README to showcase the tool
