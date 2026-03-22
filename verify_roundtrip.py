@@ -137,10 +137,15 @@ def main():
     if args.watch:
         event_handler = RoundtripEventHandler(config)
         observer = Observer()
-        path_to_watch = os.path.dirname(config["input_file"])
+        path_to_watch = os.path.dirname(os.path.realpath(config["input_file"]))
         print(f"Watching {path_to_watch} for changes to {config['input_file']}...")
         observer.schedule(event_handler, path_to_watch, recursive=False)
-        observer.start()
+        try:
+            observer.start()
+        except FileNotFoundError as e:
+            print(e)
+            print(e.filename)
+            exit(1)
         try:
             while True:
                 time.sleep(2)
