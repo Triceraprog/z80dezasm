@@ -572,7 +572,7 @@ def cli():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--romfile', type=str, required=True)
-    parser.add_argument('--crossref', type=bool, required=False, default=False)
+    parser.add_argument('--crossref', action='store_true', default=False)
     parser.add_argument('--comments', type=str, required=True)
     parser.add_argument('--org', type=lambda x: int(x, 0), default=0x0000,
                         help='ROM load address (default: 0x0000)')
