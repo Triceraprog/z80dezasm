@@ -1,0 +1,14 @@
+$0000   [cold]
+$0008   [rst01]
+        This routine is empty but pretends to emit a character.
+$0010   [rst02]
+$0018   [rst03]
+$0020   [rst04]
+$0028   [rst05]
+$0030   [rst06]
+$0038   [rst07]
+$0066   [nmi]
+        %CODE
+$0068   [irq_handler]
+$0083   [start]
+        The main program is an infinite loop.
