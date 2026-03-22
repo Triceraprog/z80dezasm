@@ -1,5 +1,5 @@
 from .analysis import analysis
-from .comments_new import read_new_comment_file
+from .comments import read_new_comment_file
 from .rom import Rom
 from .z80opcode_strings import decoded_to_string, inject_label_on_call, find_reserved_label_conflicts, P_CONDITION
 
