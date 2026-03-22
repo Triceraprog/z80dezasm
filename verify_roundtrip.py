@@ -6,6 +6,7 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+script_directory = os.path.dirname(os.path.realpath(__file__))
 
 def disassemble(input_file, from_rom, to_asm, org=None, entry_point=None):
     cmd = ["uv", "run", "z80decomp", "--romfile", from_rom, "--comments", input_file]
@@ -14,7 +15,7 @@ def disassemble(input_file, from_rom, to_asm, org=None, entry_point=None):
     if entry_point is not None:
         cmd += ["--entry-point", hex(entry_point)]
 
-    p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=script_directory)
 
     if p.returncode != 0:
         print(p.stdout)
@@ -117,8 +118,8 @@ def main():
     parser.add_argument("--romfile", required=True, help="Input ROM file")
     parser.add_argument("--comments", required=True, help="Comments/annotations file")
     parser.add_argument("--output", required=True, help="Output basename (produces <output>.bin and <output>.asm)")
-    parser.add_argument("--org", type=int, help="Origin address (optional)")
-    parser.add_argument("--entry-point", type=int, help="Entry point address (optional)")
+    parser.add_argument("--org", type=str, help="Origin address (optional)")
+    parser.add_argument("--entry-point", type=str, help="Entry point address (optional)")
     parser.add_argument("--watch", action="store_true", help="Watch for changes and re-run automatically")
     args = parser.parse_args()
 
