@@ -1,6 +1,6 @@
 # z80dezasm
 
-z80dezasm est un outil conçu pour aider à désassembler et annoter  des fichiers binaires Z80.
+z80dezasm est un outil conçu pour aider à désassembler et annoter des fichiers binaires Z80.
 Le projet vise à comprendre d'anciennes ROM d'ordinateurs et à produire un fichier
 en langage d'assembleur lisible par un humain, pouvant être réassemblé pour reformer le binaire original.
 
@@ -37,7 +37,7 @@ usage: z80dezasm [-h] --romfile ROMFILE [--crossref] --comments COMMENTS [--org 
                  [--entry-point ENTRY_POINT]
 ```
 
-- `romfile` est obligatoire et correspond au fichier binaire d'entrée que l'on souhaite désassembler désassembler.
+- `romfile` est obligatoire et correspond au fichier binaire d'entrée que l'on souhaite désassembler.
 - `comments` est obligatoire et correspond au fichier contenant les directives et commentaires qui aideront 
   à générer le résultat.
 - `org` est l'origine du flux binaire (par défaut 0x0000). Il accepte toute valeur convertible en entier.

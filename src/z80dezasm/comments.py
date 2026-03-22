@@ -12,7 +12,7 @@ def get_hexadecimal_from_string(s: str):
 
 
 def get_starting_address(line):
-    """ Checks if the line starts with a memory adress in hexadecimal.
+    """ Checks if the line starts with a memory address in hexadecimal.
         The address must be on the first column. """
     try:
         potential_address = get_hexadecimal_from_string(line[0:5])
@@ -29,7 +29,7 @@ COMMENT_TYPE_ERROR = "ERROR"
 
 
 def get_type_and_content(s: str):
-    """ Gets a stripped comment string and returns it's type and it's extracted content. """
+    """ Gets a stripped comment string and returns it's type, and it's extracted content. """
     if len(s) == 0:
         return COMMENT_TYPE_TEXT, ""
 
