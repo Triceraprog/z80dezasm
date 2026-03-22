@@ -1,1 +1,0 @@
-- Remove the old comment format processing
